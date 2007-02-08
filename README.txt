@@ -3,7 +3,7 @@ Content Taxonomy:
 
 This module provides a field type for cck for referencing taxonomy terms.
 
-Note: This module requires the applyng of following patch to the taxonomy.module: 
+Note: This module requires the applying of following patch to the taxonomy.module: 
  -->http://drupal.org/node/56670
 
 The content_taxonomy.module implements all basic field functions. 
