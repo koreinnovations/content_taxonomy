@@ -1,0 +1,82 @@
+<?php
+
+// $Id$
+
+/**
+ * @file
+ * Defines a widget type for content_taxonomy with radios/checkboxes
+ **/
+
+/**
+ * Implementation of hook_help().
+ **/
+function content_taxonomy_options_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Defines a widget type for content_taxonomy with radios/checkboxes. <em>Note: Requires content.module.</em>');
+  }
+}
+
+/**
+ * Implementation of hook_widget_info().
+ */
+function content_taxonomy_options_widget_info() {
+  return array(
+    'content_taxonomy_options' => array(
+      'label' => 'Checkboxes/Radios',
+      'field types' => array('content_taxonomy'),
+    ),
+  );
+  return $items;
+}
+
+
+/**
+ * Implementation of hook_widget().
+ */
+function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
+  
+  $vid = $field['vid'];
+  $tid = $field['tid'];
+  $depth = (!empty($field['depth'])) ? $field['depth'] : NULL;
+  
+  switch ($op) {
+    case 'form':
+      $form = array();
+      $form[$field['field_name']] = array(
+        '#tree' => TRUE, 
+        '#weight' => $field['widget']['weight'], 
+      );
+      $options = content_taxonomy_build_options($vid, $field['tid'], $depth, FALSE);
+      $default_values = is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : array();
+
+      $form[$field['field_name']]['tids'] = array(
+        '#type' => ($field['multiple']) ? 'checkboxes' : 'radios',
+        '#title' => t($field['widget']['label']),
+        '#default_value' => isset($node_field[$field['tid']]) ? ($field['multiple'] ? $default_values : reset($default_values) ) : $field['widget']['default_value']['tids'],
+        '#multiple' => ($field['multiple']) ? TRUE : FALSE,
+        '#options' => $options,
+        '#required' => $field['required'],
+        '#description' => t($field['widget']['description']),
+      );
+          
+      return $form;
+          
+    case 'process form values':         
+      if (isset($field['save']) && $field['save'] != 'tag') {
+        if ($field['multiple']) {
+          foreach ($node_field['tids'] as $key => $tid) {                
+            if ($tid != 0) $keys[$key] = $tid;
+          }
+        }
+      	else {
+      	  $keys[$node_field['tids']] = $node_field['tids'];
+      	}
+        $node_field = content_transpose_array_rows_cols(array('value' => $keys));
+
+      }
+      break;
+  }
+}
+
+?>
