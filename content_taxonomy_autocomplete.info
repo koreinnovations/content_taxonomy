@@ -1,0 +1,8 @@
+; $Id$
+name = Content Taxonomy Autocomplete
+description = Defines a autocomplete widget type for content_taxonomy
+version = $Name$
+dependencies = content content_taxonomy
+package = CCK
+
+

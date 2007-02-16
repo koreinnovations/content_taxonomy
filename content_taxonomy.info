@@ -1,0 +1,8 @@
+; $Id$
+name = Content Taxonomy
+description = Defines a field type for taxonomy terms
+version = "$Name $"
+dependencies = content
+package = CCK
+
+
