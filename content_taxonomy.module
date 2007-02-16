@@ -129,6 +129,9 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
     case 'insert':
       global $tags;
       global $fields;
+      global $vids;
+      $vids[$field['vid']] = $field['vid'];
+      
       if (isset($field['save']) && $field['save'] != 'cck_table') {
         $tids = array();
         if (is_array($node_field['tids'])) {
@@ -164,7 +167,10 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
 
         if (count($fields[$node->nid]) == 1) {
           if (is_array($tags[$node->nid])) {
-            content_taxonomy_save_tids($tags[$node->nid], $node->nid);
+            $tids = $tags[$node->nid];
+            //allow external modules to alter tids array before saving
+            module_invoke_all('content_taxonomy_alter_terms', $field['vid'], $tids, $node->nid);
+            content_taxonomy_save($node,$tids, $vids);
             unset($tags[$node->nid]);
             unset($fields[$node->nid]);
           }
@@ -173,7 +179,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
 	        unset($fields[$node->nid][$field['field_name']]);
         }
         
-        //widget specific saving
+        //widget specific saving of additional data
         $widget_type = $field['widget']['type'];
         $function = $widget_type ."_field_insert";
         if (function_exists($function)) {
@@ -307,16 +313,25 @@ function content_taxonomy_get_fields($type) {
 }
 
 /**
- * saves terms for a node
+ * adds terms to node->taxonomy object
  */
-function content_taxonomy_save_tids($tids, $nid) {
-  $saved_tids = array();
+function content_taxonomy_save(&$node, $tids, $vids){
   $tids = array_unique($tids);
-  $saved_tids_sql = db_query("SELECT tid FROM {term_node} WHERE nid = %d", $nid);
-  while ($data = db_fetch_array($saved_tids_sql)) {
-    $saved_tids[$data['tid']] = $data['tid'];
+  $taxonomy = array();
+  
+  //deleteing before saving
+  if (is_array($node->taxonomy)) {
+    foreach ($node->taxonomy as $tid => $term) {
+      if (in_array($term->vid, $vids)) {
+        unset($node->taxonomy[$tid]);
+      }
+    }
   }
-  taxonomy_node_save($nid, $tids, $saved_tids);
+  
+  //save terms
+  foreach ($tids as $id => $tid) {
+    $node->taxonomy[$tid] = $tid;
+  }
 }
 
 
