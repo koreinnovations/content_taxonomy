@@ -1,0 +1,138 @@
+<?php
+
+// $Id$
+
+/**
+ * @file
+ * Views Support for content_taxonomy
+ **/
+
+/**
+ * Implementation of hook_help().
+ **/
+function content_taxonomy_views_help($section) {
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Views support for content_taxonomy. <em>Note: Requires views.module.</em>');
+  }
+}
+
+function content_taxonomy_views_views_tables() {
+  $tables = array();
+
+  $fields = content_fields();
+  $info = _content_type_info();
+
+  foreach ($fields as $field) {
+    if ($field['type'] == 'content_taxonomy') {
+      
+      foreach ($info['content types'] as $content_type) {
+        foreach ($content_type['fields'] as $field_name => $field_info) {
+          if ($field_name == $field['field_name']) {
+            if (isset($field_info['widget']['group_tid'])) {
+              $group_tid = $field_info['widget']['group_tid'];
+            }
+          }
+        }
+      }
+      
+      $tables['term_node_'. $field['field_name']] = array(
+	      'name' => 'term_node', 
+        'provider' => 'internal', 
+        'join' => array( 
+          'left' => array( 
+            'table' => 'node', 
+            'field' => 'nid', 
+          ),
+          'right' => array( 
+            'field' => 'nid', 
+          ), 
+        ),
+	      'fields' => array( 
+          'name' => array(
+            'name' => 'Taxonomy Field: '. $field['field_name'],
+	          'sortable' => TRUE,
+	          'handler' => 'views_handler_field_terms_by_parent',
+	          'handler' => array(
+	            'views_handler_field_terms_by_parent' => "No link", 
+	            'views_handler_field_terms_by_parent_link' => "With link"),
+            'parent' => $field['tid'],
+	          'voc_id' => $field['vid'],
+	          'notafield' => TRUE,
+          ),
+        ),
+        'filters' => array(
+          'tid' => array(
+            'name' => 'Taxonomy Field: '. $field['field_name'],
+            'list' => 'views_handler_filter_tid_by_parent',
+            'list-type' => isset($field['multiple']) ? 'list' : 'select',
+            'value-type' => 'array',
+            'option' => 'string',
+            'operator' => 'views_handler_operator_andor',
+            'handler' => 'views_handler_filter_tid_custom',
+            'parent' => $field['tid'],
+            'voc_id' => $field['vid'],
+        	  'group' => $group_tid,
+          ),
+        )
+      );
+    }
+  }
+
+      
+  return $tables;
+}
+/**
+ * Display all the terms for a given parent term
+ */
+function views_handler_field_terms_by_parent($fieldinfo, $fielddata, $value, $data) {
+  $terms = array();
+  $names = array();
+  
+  if ($fieldinfo['parent']) {    
+    $terms = content_taxonomy_terms_by_field($data->nid, $fieldinfo['voc_id'], $fieldinfo['parent']);
+  }
+  if (is_array($terms)) {
+	  foreach ($terms as $term) {
+	    $names[] = $term->name;
+	  }
+	
+	  return implode(', ', $names);
+  }
+}
+
+/**
+ * Display all the terms for a given parent term (links)
+ */
+function views_handler_field_terms_by_parent_link($fieldinfo, $fielddata, $value, $data) {
+  if ($fieldinfo['parent']) {    
+    $terms = content_taxonomy_terms_by_field($data->nid, $fieldinfo['voc_id'], $fieldinfo['parent']);
+  }
+
+  if (is_array($terms)) {
+    $node->taxonomy = $terms;
+    return theme('links', taxonomy_link('taxonomy terms', $node));
+  }
+}
+
+/**
+ * Create a list of terms for a given parent, optional with optgroups
+ */
+function views_handler_filter_tid_by_parent($op, $filterinfo) {
+  $options = array();
+  foreach (taxonomy_get_children($filterinfo['parent']) as $term) {
+    $options[$term->tid] = $term->name;
+  }
+
+  if ($filterinfo['group']) {
+    foreach (taxonomy_get_children($filterinfo['group']) as $group) {
+      foreach (taxonomy_get_children($group->tid) as $term) {
+        $options[$group->name][$term->tid] = $term->name;
+        unset($options[$term->tid]);
+      }
+    }
+  }
+  return $options;
+}
+
+?>
