@@ -107,6 +107,12 @@ function content_taxonomy_select_widget($op, &$node, $field, &$node_field) {
           
       return $form;
       
+    case 'validate': 
+      if ($field['required'] && $node_field['tids'] == 0){
+        form_set_error($field['field_name'] , t('The field %d is required',array('%d'=>$field['widget']['label'])));
+      } 
+      break;
+      
     case 'process form values':         
       if (isset($field['save']) && $field['save'] != 'tag') {
         if ($field['multiple']) {
