@@ -79,6 +79,7 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
         '#autocomplete_path' => 'content_taxonomy/autocomplete/'.$vid.'/'.$tid.'/'.$field['multiple'],
         '#default_value' => isset($node_field[$field['tid']]) ? content_taxonomy_autocomplete_merge_tags($node_field[$field['tid']], $vid, $tid) : $field['widget']['default_value']['values'],
         '#description' => t($field['widget']['description']),
+		    '#required' => $field['required'],
       );
       return $form;
       
@@ -112,6 +113,16 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
             $node_field['tids'] = $new_tids;
           }
         }
+      }
+	    if (isset($field['save']) && $field['save'] != 'tag') {
+        $keys = array();
+        if(!$node_field['tids']){ 
+          $node_field['tids'] = array();
+        }
+		    foreach ($node_field['tids'] as $key => $tid) {
+          if ($tid != 0) $keys[$key] = $tid; 
+		    }
+		    $node_field = content_transpose_array_rows_cols(array('value' => $keys));
       }
       unset($node_field['values']);
       break;
