@@ -3,11 +3,15 @@ Content Taxonomy:
 
 This module provides a field type for cck for referencing taxonomy terms.
 
-Note: This module requires the applying of following patch to the taxonomy.module: 
- -->http://drupal.org/node/56670
-
 The content_taxonomy.module implements all basic field functions. 
 The other modules offer different widgets (selects,..)
+
+Installation:
+-------------
+1.  Install this files into the modules directory of your choice (for example, sites/yoursite.com/modules/content_taxonomy).
+2.  Enable content_taxonomy.module in the admin/modules page
+3.  Enable wanted widgets in admin/modules (e.g. content_taxonomy_select.module) Note: all require content_taxonomy.module!
+4.  Optional enable content_taxonomy_views.module for improved taxonomy-views support 
 
 Settings:
 ---------
@@ -20,22 +24,26 @@ or the term is only saved in a cck-table (so not a real term - node connection)
 content_taxonomy_select:
 ------------------------
  defines a multiple/single select field. 
-
+ additional widget settings: opt-groups are possible
 
 content_taxonomy_options:
 -------------------------
  provides radios/checkboxes (depends on single/multiple)
-
 
 content_taxonomy_autocomplete:
 ------------------------------
  provides autocomplete. synonyms are considered by this autocomplete. Optional you can restrict the
  saving of new terms.
 
-
 content_taxonomy_activeselect:
 ------------------------------
  requires the activeselect.module
- offers dependant selects, at the moment 2-3 bars are possible
+ offers dependent selects, at the moment 2-3 bars are possible
 
 
+
+Author:
+-------
+Matthias Hutterer
+mh86@drupal.org
+m_hutterer@hotmail.com
