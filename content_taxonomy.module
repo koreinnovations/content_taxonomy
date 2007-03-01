@@ -225,10 +225,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
         $items[] = $item;
       }
       $item = array();
-      foreach ($items as $tid) {
-        if ($field['save'] == 'cck_table') {
-          $tid = $tid['value'];
-        }
+      foreach ($items as $key => $tid) {
         $item[] = taxonomy_get_term($tid);
       }
     }  
