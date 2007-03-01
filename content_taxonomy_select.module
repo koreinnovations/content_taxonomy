@@ -126,6 +126,13 @@ function content_taxonomy_select_widget($op, &$node, $field, &$node_field) {
         
       	$node_field = content_transpose_array_rows_cols(array('value' => $keys));
       }
+      else {
+        if (!$field['multiple']) {
+          $value = $node_field['tids'];
+          $node_field['tids'] = array();
+          $node_field['tids'][0] = $value;
+        }
+      }
       
      break;
   }

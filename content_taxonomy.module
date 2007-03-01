@@ -218,12 +218,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
   if ($node->in_preview) {
     if (isset($item)) {
       $items = array();
-      if ($field['multiple']) {
-        $items = $item;
-      }
-      else {
-        $items[] = $item;
-      }
+      $items = $item;
       $item = array();
       foreach ($items as $key => $tid) {
         $item[] = taxonomy_get_term($tid);
