@@ -2,7 +2,7 @@
 name = Content Taxonomy
 description = Defines a field type for taxonomy terms
 version = "$Name $"
-dependencies = content
+dependencies = content taxonomy
 package = CCK
 
 

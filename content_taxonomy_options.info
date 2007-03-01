@@ -2,7 +2,7 @@
 name = Content Taxonomy Options
 description = Defines a checkboxes/radios widget type for content_taxonomy
 version = "$Name$"
-dependencies = content content_taxonomy
+dependencies = content content_taxonomy taxonomy
 package = CCK
 
 
