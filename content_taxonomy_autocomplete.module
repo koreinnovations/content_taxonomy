@@ -76,7 +76,7 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
       $form[$field['field_name']]['values'] = array(
         '#type' => 'textfield',
         '#title' => $field['widget']['label'],
-        '#autocomplete_path' => 'content_taxonomy/autocomplete/'.$vid.'/'.$tid.'/'.$field['multiple'],
+        '#autocomplete_path' => 'content_taxonomy/autocomplete/'. $field['field_name'] .'/'.$field['multiple'],
         '#default_value' => isset($node_field[$field['tid']]) ? content_taxonomy_autocomplete_merge_tags($node_field[$field['tid']], $vid, $tid) : $field['widget']['default_value']['values'],
         '#description' => t($field['widget']['description']),
 		    '#required' => $field['required'],
@@ -150,15 +150,19 @@ function content_taxonomy_autocomplete_menu($may_cache) {
 /**
  * Retrieve a pipe delimited string of autocomplete suggestions
  * 
- * @param Integer Vocabulary ID
+ * @param String Fieldname
  * @param Integer TID of a parent (optional)
  * @param BOOLEAN whether a multiple field or not
  * @param STRING typed input
  */
-function content_taxonomy_autocomplete_load($vid, $tid = FALSE, $multiple = TRUE, $string = '') {
+function content_taxonomy_autocomplete_load($field_name, $multiple = TRUE, $string = '') {
    // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   // This regexp allows the following types of user input:
   // this, "somecmpany, llc", "and ""this"" w,o.rks", foo bar
+  $content_type_info = _content_type_info();
+  $vid = $content_type_info['fields'][$field_name]['vid'];
+  $tid = $content_type_info['fields'][$field_name]['tid'];
+  
   $regexp = '%(?:^|,\ *)("(?>[^"]*)(?>""[^"]* )*"|(?: [^",]*))%x';
   preg_match_all($regexp, $string, $matches);
   $array = $matches[1];
@@ -167,20 +171,23 @@ function content_taxonomy_autocomplete_load($vid, $tid = FALSE, $multiple = TRUE
   $last_string = trim(array_pop($array));
   if ($last_string != '') {
     if ($tid) {
-      $result = db_query_range("SELECT t.name FROM {term_data} t, {term_synonym} s, {term_hierarchy} h 
-        WHERE h.parent = %d AND h.tid = t.tid
-        AND (LOWER(t.name) LIKE LOWER('%%%s%%') OR (t.tid = s.tid AND LOWER(s.name) LIKE LOWER('%%%s%%')))",
+      $result = db_query_range(db_rewrite_sql("SELECT t.name FROM {term_data} t 
+        LEFT JOIN {term_synonym} s ON t.tid = s.tid
+        INNER JOIN {term_hierarchy} h ON  t.tid = h.tid
+        WHERE h.parent = %d 
+        AND (LOWER(t.name) LIKE LOWER('%%%s%%') OR LOWER(s.name) LIKE LOWER('%%%s%%'))", 't', 'tid'),
         $tid,$last_string,$last_string,0,10);
     }
     else {
-      $result = db_query_range("SELECT t.name FROM {term_data} t, {term_synonym} s 
+      $result = db_query_range(db_rewrite_sql("SELECT t.name FROM {term_data} t 
+        LEFT JOIN {term_synonym} s ON t.tid = s.tid
         WHERE t.vid = %d 
-        AND (LOWER(t.name) LIKE LOWER('%%%s%%') OR (t.tid = s.tid AND LOWER(s.name) LIKE LOWER('%%%s%%')))",
-        $vid,$last_string,$last_string,0,10);
+        AND (LOWER(t.name) LIKE LOWER('%%%s%%') OR LOWER(s.name) LIKE LOWER('%%%s%%'))", 't', 'tid'),
+        $vid, $last_string, $last_string, 0, 10);
     }
       
     if ($multiple) {
-      $prefix = count($array) ? implode(',', $array) .',' : '';
+      $prefix = count($array) ? implode(',', $array) .', ' : '';
     }
     else {
       $prefix = '';
