@@ -87,8 +87,9 @@ function content_taxonomy_field_settings($op, $field) {
       );
       
       return $form;   
+      
     case 'save':
-      return array('save', 'vid','tid', 'depth', 'terms_as_links');
+      return array('save', 'vid', 'tid', 'depth');
     
     case 'database columns':
       if (isset($field['save']) && $field['save'] != 'tag') {
@@ -114,7 +115,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
         }
       }
       else {
-        $additions[$field['field_name']][$field['tid']] = content_taxonomy_terms_by_field($node->nid, $field['vid'], $field['tid']);
+        $additions[$field['field_name']][$field['tid']] = content_taxonomy_terms_by_field($node, $field['vid'], $field['tid'], $field['depth'])
       }
       
       $widget_type = $field['widget']['type'];
@@ -126,71 +127,37 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       break;
       
     case 'update':
-    case 'insert':
-      global $tags;
-      global $fields;
-      global $vids;
-      $vids[$field['vid']] = $field['vid'];
+      global $cleared;
+      if (!is_array($cleared[$node->nid][$field['vid']]) || !$cleared[$node->nid][$field['vid']]) {
+        content_taxonomy_clear_taxonomy_array($node, $field['vid']);
+        $cleared[$node->nid][$field['vid']] = true;
+      }
       
+    case 'insert':
       if (isset($field['save']) && $field['save'] != 'cck_table') {
-        $tids = array();
         if (is_array($node_field['tids'])) {
           foreach ($node_field['tids'] as $tid) {
-            if ($tid) {
-              $tids[] = $tid;
-            }
+            $node->taxonomy[$tid] = $tid;
           }
-        }
-        elseif ($node_field['tids']) {
-          $tids[] = $node_field['tids'];
         }
         elseif (is_array($node_field) && $field['save'] == 'both') {
           foreach ($node_field as $tid => $value) {
-            $tids[] = $tid;
+            $node->taxonomy[$tid] = $tid;
           }
-        }
-        
-        //collect all tags from different content_taxonomy fields and do saving only once per node
-        if (!is_array($fields[$node->nid])) {        
-          $fields[$node->nid] = content_taxonomy_get_fields($node->type);
-        }
-        
-        if (is_array($tids)) {
-          if (is_array($tags[$node->nid])) {
-            $tags[$node->nid] = array_merge($tags[$node->nid], $tids);
-          }
-          else {
-            $tags[$node->nid] = array();
-            $tags[$node->nid] = $tids;
-          }
-        }
-
-        if (count($fields[$node->nid]) == 1) {
-          if (is_array($tags[$node->nid])) {
-            $tids = $tags[$node->nid];
-            //allow external modules to alter tids array before saving
-            module_invoke_all('content_taxonomy_alter_terms', $field['vid'], $tids, $node->nid);
-            content_taxonomy_save($node,$tids, $vids);
-            unset($tags[$node->nid]);
-            unset($fields[$node->nid]);
-          }
-        }
-        elseif (count($fields[$node->nid]) > 1) {        
-	        unset($fields[$node->nid][$field['field_name']]);
-        }
-        
-        //widget specific saving of additional data
-        $widget_type = $field['widget']['type'];
-        $function = $widget_type ."_field_insert";
-        if (function_exists($function)) {
-          $function($op, $node, $field, $node_field, $teaser, $page);
-        }
+        }       
+      }
+      
+      //widget specific saving of additional data
+      $widget_type = $field['widget']['type'];
+      $function = $widget_type ."_field_insert";
+      if (function_exists($function)) {
+        $function($op, $node, $field, $node_field, $teaser, $page);
       }
       break;
       
     case 'delete':
-      taxonomy_node_delete($nid);
-      return;
+      taxonomy_node_delete($node->nid);
+      break;
   }
 }
 
@@ -216,12 +183,9 @@ function content_taxonomy_field_formatter_info() {
  */
 function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
   if ($node->in_preview) {
-    if (isset($item)) {
-      $items = array();
-      $items = $item;
-      $item = array();
-      foreach ($items as $key => $tid) {
-        $item[] = taxonomy_get_term($tid);
+    if (is_array($item)) {
+      foreach ($item as $key => $tid) {
+        $item[$key] = taxonomy_get_term($tid);
       }
     }  
   }
@@ -230,7 +194,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
     return '';
   }
   
-  if ($field['terms_as_links'] || $formatter == 'link') {
+  if ((is_array($field['terms_as_links']) && $field['terms_as_links']) || $formatter == 'link') {
     foreach ($item as $key => $term) {
       $output .= l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description)) ." <br />";;
     }
@@ -249,8 +213,8 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
  *  @param Integer Voc ID
  *  @param Integer TID of a Parent
  */
-function content_taxonomy_terms_by_field($nid, $vid, $parent = NULL) {
-  if ($parent) {
+function content_taxonomy_terms_by_field($nid, $vid, $parent = NULL, $depth) {
+  if ($parent && $depth == 1) {
     $result = db_query("SELECT n.tid FROM {term_hierarchy} h, {term_node} n WHERE
       n.nid = %d AND n.tid = h.tid AND h.parent = %d", $nid, $parent);
     
@@ -266,65 +230,16 @@ function content_taxonomy_terms_by_field($nid, $vid, $parent = NULL) {
 }
 
 /**
- * Helper function to create a tree of options
+ * Helper function to clear node->taxonomy for specific vocabulary
  */
-function content_taxonomy_build_options($vid, $parent = NULL, $depth = 0, $blank_field = TRUE) {
-  if ($depth == 1) {
-    $tree = taxonomy_get_children($parent, $vid);
-  }
-  else {
-    $tree = taxonomy_get_tree($vid,$parent,-1,$depth);
-  }
-  $options = array();
-  if ($blank_field) {
-    $options[0] = '---';
-  }
-  if ($tree) {
-    foreach ($tree as $term) {
-      $options[$term->tid] = $term->name;
-    }
-  }
-  return $options;
-}
-
-/**
- * Helper function to get all content_taxonomy fields per node type
- */
-function content_taxonomy_get_fields($type) {
-  $tax_fields = array();
-  
-  $fields = _content_type_info();
-  $node_fields = $fields['content types'][$type]['fields'];
-
-  foreach ($node_fields as $name => $info) {
-    if ($info['type'] == 'content_taxonomy' && $info['save'] != 'cck_table') $tax_fields[$name] = $name;
-  }
-
-  return $tax_fields;
-  
-}
-
-/**
- * adds terms to node->taxonomy object
- */
-function content_taxonomy_save(&$node, $tids, $vids){
-  $tids = array_unique($tids);
-  $taxonomy = array();
-  
-  //deleteing before saving
+function content_taxonomy_clear_taxonomy_array(&$node, $vid) {
   if (is_array($node->taxonomy)) {
     foreach ($node->taxonomy as $tid => $term) {
-      if (in_array($term->vid, $vids)) {
+      if (is_object($term) && $term->vid == $vid) {
         unset($node->taxonomy[$tid]);
       }
     }
-  }
-  
-  //save terms
-  foreach ($tids as $id => $tid) {
-    $node->taxonomy[$tid] = $tid;
-  }
+  } 
 }
-
 
 ?>

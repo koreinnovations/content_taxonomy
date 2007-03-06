@@ -260,11 +260,11 @@ function content_taxonomy_activeselect($source, $targets, $string, $extra = NULL
  * adding of terms when node is loaded (called by content_taxonomy)
  */
 function content_taxonomy_activeselect_field_load($op, &$node, $field, &$node_field, &$additions, $teaser, $page) {
-  $default_terms = content_taxonomy_terms_by_field($node->nid, $field['vid'], $field['tid']);
+  $default_terms = content_taxonomy_terms_by_field($node, $field['vid'], $field['tid'],1);
   $additions[$field['field_name']]['default_tid'] = array_keys($default_terms);
   $default_terms = array_values($default_terms);
   
-  $children_terms = content_taxonomy_terms_by_field($node->nid, $field['vid'], $default_terms[0]->tid);
+  $children_terms = content_taxonomy_terms_by_field($node, $field['vid'], $default_terms[0]->tid,1);
   if (is_array($children_terms)) {
     foreach ($children_terms as $term) {
       $additions[$field['field_name']]['tid'][$term->tid] = $term;
@@ -274,7 +274,7 @@ function content_taxonomy_activeselect_field_load($op, &$node, $field, &$node_fi
     $children_terms = array_values($children_terms);
     
     if ($field['widget']['grandchildren']) {
-      $grandchildren_terms = content_taxonomy_terms_by_field($node->nid, $field['vid'], $children_terms[0]->tid);
+      $grandchildren_terms = content_taxonomy_terms_by_field($node, $field['vid'], $children_terms[0]->tid,1);
       if (is_array($grandchildren_terms)) {
         foreach ($grandchildrenchildren_terms as $term) {
           $additions[$field['field_name']]['tid'][$term->tid] = $term;

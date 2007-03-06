@@ -21,14 +21,13 @@ Additional you can choose whether the term is saved as a real tag in the term_no
 or the term is only saved in a cck-table (so not a real term - node connection) 
 
 
-content_taxonomy_select:
-------------------------
- defines a multiple/single select field. 
- additional widget settings: opt-groups are possible
 
 content_taxonomy_options:
 -------------------------
- provides radios/checkboxes (depends on single/multiple)
+ provides a options widget type
+ this includes:
+   - radios/checkboxes (depends on single/multiple)
+   - multiple/single select field (opt-groups are possible)
 
 content_taxonomy_autocomplete:
 ------------------------------

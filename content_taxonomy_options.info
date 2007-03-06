@@ -1,8 +1,8 @@
 ; $Id$
 name = Content Taxonomy Options
-description = Defines a checkboxes/radios widget type for content_taxonomy
+description = Defines a widget type for content_taxonomy for options (selects, radios/checkboxes)
 version = "$Name$"
-dependencies = content content_taxonomy taxonomy
+dependencies = content content_taxonomy
 package = CCK
 
 

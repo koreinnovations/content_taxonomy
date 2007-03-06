@@ -4,7 +4,7 @@
 
 /**
  * @file
- * Defines a widget type for content_taxonomy with radios/checkboxes
+ * Defines a widget type for content_taxonomy for options
  **/
 
 /**
@@ -13,7 +13,7 @@
 function content_taxonomy_options_help($section) {
   switch ($section) {
     case 'admin/modules#description':
-      return t('Defines a widget type for content_taxonomy with radios/checkboxes. <em>Note: Requires content.module.</em>');
+      return t('Defines a widget type for content_taxonomy for options (selects, radios/checkboxes). <em>Note: Requires content.module.</em>');
   }
 }
 
@@ -26,10 +26,51 @@ function content_taxonomy_options_widget_info() {
       'label' => 'Checkboxes/Radios',
       'field types' => array('content_taxonomy'),
     ),
+    'content_taxonomy_select' => array(
+      'label' => 'Select List',
+      'field types' => array('content_taxonomy'),
+    ),
   );
   return $items;
 }
 
+/**
+ * Implementation of hook_widget_settings
+ */
+function content_taxonomy_options_widget_settings($op, $widget) {
+  if ($widget['type'] == 'content_taxonomy_select') {
+    switch ($op) {
+      case 'form':
+        $form = array();
+      
+        $options_term = array();
+        $options_term[0] = '---';
+        foreach (taxonomy_get_vocabularies() as $voc) {
+          foreach (taxonomy_get_tree($voc->vid) as $term) {
+            $options_term[$voc->name][$term->tid] = $term->name;
+          }
+        }      
+        $form['optgroup'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('OptGroups'),
+          '#collapsible' => TRUE,
+          '#description' => t(''),
+          '#weight' => 10,
+        );
+       
+        $form['optgroup']['group_tid'] = array(
+          '#title' => t('Parent for grouping in first bar'),
+          '#type' => 'select',
+          '#default_value' => isset($widget['group_tid']) ? $widget['group_tid'] : 0,
+          '#options' => $options_term,
+        );
+        return $form;
+
+      case 'save':
+        return array('group_tid');
+    }
+  }
+}
 
 /**
  * Implementation of hook_widget().
@@ -47,21 +88,52 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
         '#tree' => TRUE, 
         '#weight' => $field['widget']['weight'], 
       );
-      $options = content_taxonomy_build_options($vid, $field['tid'], $depth, FALSE);
-      $default_values = is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : array();
-
-      $form[$field['field_name']]['tids'] = array(
-        '#type' => ($field['multiple']) ? 'checkboxes' : 'radios',
-        '#title' => t($field['widget']['label']),
-        '#default_value' => isset($node_field[$field['tid']]) ? ($field['multiple'] ? $default_values : reset($default_values) ) : $field['widget']['default_value']['tids'],
-        '#multiple' => ($field['multiple']) ? TRUE : FALSE,
-        '#options' => $options,
-        '#required' => $field['required'],
-        '#description' => t($field['widget']['description']),
-      );
+      
+      switch ($field['widget']['type']) {
+        case 'content_taxonomy_options':
+          $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE);
+          $default_values = is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : array();
+          
+          $form[$field['field_name']]['tids'] = array(
+            '#type' => ($field['multiple']) ? 'checkboxes' : 'radios',
+            '#title' => t($field['widget']['label']),
+            '#default_value' => isset($node_field[$field['tid']]) ? ($field['multiple'] ? $default_values : reset($default_values) ) : $field['widget']['default_value']['tids'],
+            '#multiple' => ($field['multiple']) ? TRUE : FALSE,
+            '#options' => $options,
+            '#required' => $field['required'],
+            '#description' => t($field['widget']['description']),
+          );
+          break;
+        
+        case 'content_taxonomy_select': 
+          $options = array();
+          if ($field['widget']['group_tid']) {   
+            $options = content_taxonomy_options_groups($field);
+          }
+          else {
+            $options = content_taxonomy_options_array($vid,$tid,$depth,!$field['multiple']);
+          }
+            
+          $form[$field['field_name']]['tids'] = array(
+            '#type' => 'select',
+            '#title' => t($field['widget']['label']),
+            '#default_value' => is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : $field['widget']['default_value']['tids'],
+            '#multiple' => ($field['multiple']) ? TRUE : FALSE,
+            '#options' => $options,
+            '#required' => $field['required'],
+            '#description' => t($field['widget']['description']),
+          );
+          break;
+      }
           
       return $form;
-          
+      
+    case 'validate': 
+      if ($field['required'] && $node_field['tids'] == 0){
+        form_set_error($field['field_name'] , t('The field %d is required',array('%d'=>$field['widget']['label'])));
+      } 
+      break;     
+       
     case 'process form values':         
       if (isset($field['save']) && $field['save'] != 'tag') {
         if ($field['multiple']) {
@@ -73,7 +145,6 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
       	  $keys[$node_field['tids']] = $node_field['tids'];
       	}
         $node_field = content_transpose_array_rows_cols(array('value' => $keys));
-
       }
       else {
         if (!$field['multiple']) {
@@ -84,6 +155,59 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
       }
       break;
   }
+}
+
+/**
+ * Helper function to create a tree of options
+ */
+function content_taxonomy_options_array($vid, $parent = NULL, $depth = 0, $blank_field = TRUE) {
+  if ($depth == 1) {
+    $tree = taxonomy_get_children($parent, $vid);
+  }
+  else {
+    $tree = taxonomy_get_tree($vid,$parent,-1,$depth);
+  }
+  $options = array();
+  if ($blank_field) {
+    $options[0] = '---';
+  }
+  if ($tree) {
+    foreach ($tree as $term) {
+      $options[$term->tid] = $term->name;
+    }
+  }
+  return $options;
+}
+
+/**
+ * helper function to generate opt groups in selects
+ */
+function content_taxonomy_options_groups($field) {
+  $parent = $field['tid'];
+  $group_parent = $field['widget']['group_tid'];
+  if (!$field['multiple']) {
+    $options[0] = t('---');
+  }
+  
+  //if children in no group
+  $default_terms = taxonomy_get_children($parent);
+  foreach ($default_terms as $default_term) {
+    $default_tids[$default_term->tid] = $default_term->name;
+  }
+  
+  foreach (taxonomy_get_children($group_parent) as $group) {
+    foreach (taxonomy_get_children($group->tid) as $term) {
+      $options[$group->name][$term->tid] = $term->name;
+      unset($default_tids[$term->tid]);
+    }
+  }
+  
+  if (is_array($default_tids)) {
+    foreach ($default_tids as $tid => $name) {
+      $options[$tid] = $name;
+    }
+  }
+  return $options;
 }
 
 ?>
