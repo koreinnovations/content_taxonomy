@@ -1,8 +1,0 @@
-; $Id$
-name = Content Taxonomy Select
-description = Defines a select widget type for content_taxonomy
-version = "$Name$"
-dependencies = content content_taxonomy taxonomy
-package = CCK
-
-
