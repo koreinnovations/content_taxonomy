@@ -2,7 +2,7 @@
 name = Content Taxonomy ActiveSelect
 description = Defines a activeselect widget type for content_taxonomy
 version = "$Name$"
-dependencies = content content_taxonomy activeselect taxonomy
+dependencies = content content_taxonomy activeselect
 package = CCK
 
 
