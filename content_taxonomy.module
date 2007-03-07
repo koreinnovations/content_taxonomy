@@ -115,7 +115,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
         }
       }
       else {
-        $additions[$field['field_name']][$field['tid']] = content_taxonomy_terms_by_field($node, $field['vid'], $field['tid'], $field['depth'])
+        $additions[$field['field_name']][$field['tid']] = content_taxonomy_terms_by_field($node, $field['vid'], $field['tid'], $field['depth']);
       }
       
       $widget_type = $field['widget']['type'];
