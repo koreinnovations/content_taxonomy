@@ -213,10 +213,10 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
  *  @param Integer Voc ID
  *  @param Integer TID of a Parent
  */
-function content_taxonomy_terms_by_field($nid, $vid, $parent = NULL, $depth) {
+function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
   if ($parent && $depth == 1) {
     $result = db_query("SELECT n.tid FROM {term_hierarchy} h, {term_node} n WHERE
-      n.nid = %d AND n.tid = h.tid AND h.parent = %d", $nid, $parent);
+      n.nid = %d AND n.tid = h.tid AND h.parent = %d", $node->nid, $parent);
     
     while ($data = db_fetch_array($result)) {
       $term = taxonomy_get_term($data["tid"]);
@@ -225,7 +225,7 @@ function content_taxonomy_terms_by_field($nid, $vid, $parent = NULL, $depth) {
     return $additions;
   }
   else { 
-    return taxonomy_node_get_terms_by_vocabulary($nid, $vid);
+    return taxonomy_node_get_terms_by_vocabulary($node->nid, $vid);
   }
 }
 
