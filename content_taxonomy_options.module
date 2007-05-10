@@ -91,7 +91,7 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
       
       switch ($field['widget']['type']) {
         case 'content_taxonomy_options':
-          $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE);
+          $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE, FALSE);
           $default_values = is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : array();
           
           $form[$field['field_name']]['tids'] = array(
@@ -111,7 +111,7 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
             $options = content_taxonomy_options_groups($field);
           }
           else {
-            $options = content_taxonomy_options_array($vid,$tid,$depth,!$field['multiple']);
+            $options = content_taxonomy_options_array($vid,$tid,$depth,!$field['multiple'], TRUE);
           }
             
           $form[$field['field_name']]['tids'] = array(
@@ -160,20 +160,29 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
 /**
  * Helper function to create a tree of options
  */
-function content_taxonomy_options_array($vid, $parent = NULL, $depth = 0, $blank_field = TRUE) {
+function content_taxonomy_options_array($vid, $parent = NULL, $depth = 0, $blank_field = TRUE, $show_depth = FALSE) {
+  $options = array();
+  
   if ($depth == 1) {
     $tree = taxonomy_get_children($parent, $vid);
   }
   else {
     $tree = taxonomy_get_tree($vid,$parent,-1,$depth);
   }
-  $options = array();
+
   if ($blank_field) {
     $options[0] = '---';
   }
+  
   if ($tree) {
     foreach ($tree as $term) {
-      $options[$term->tid] = $term->name;
+      if ($show_depth) {
+        $value = str_repeat('- ', $term->depth) . $term->name;
+      }
+      else {
+        $value = $term->name;
+      }
+      $options[$term->tid] = $value;
     }
   }
   return $options;
@@ -192,21 +201,16 @@ function content_taxonomy_options_groups($field) {
   //if children in no group
   $default_terms = taxonomy_get_children($parent);
   foreach ($default_terms as $default_term) {
-    $default_tids[$default_term->tid] = $default_term->name;
+    $options[$default_term->tid] = $default_term->name;
   }
   
   foreach (taxonomy_get_children($group_parent) as $group) {
     foreach (taxonomy_get_children($group->tid) as $term) {
       $options[$group->name][$term->tid] = $term->name;
-      unset($default_tids[$term->tid]);
+      unset($options[$term->tid]);
     }
   }
-  
-  if (is_array($default_tids)) {
-    foreach ($default_tids as $tid => $name) {
-      $options[$tid] = $name;
-    }
-  }
+
   return $options;
 }
 
