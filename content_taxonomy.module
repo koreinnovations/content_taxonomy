@@ -128,21 +128,21 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       
     case 'update':
       global $cleared;
-      if (!is_array($cleared[$node->nid][$field['vid']]) || !$cleared[$node->nid][$field['vid']]) {
-        content_taxonomy_clear_taxonomy_array($node, $field['vid']);
-        $cleared[$node->nid][$field['vid']] = true;
+      if (!is_array($cleared[$node->nid]) || !$cleared[$node->nid]) {
+        unset($node->taxonomy);
+        $cleared[$node->nid] = true;
       }
       
     case 'insert':
       if (isset($field['save']) && $field['save'] != 'cck_table') {
         if (is_array($node_field['tids'])) {
           foreach ($node_field['tids'] as $tid) {
-            $node->taxonomy[$tid] = $tid;
+            $node->taxonomy[$field['vid']][$tid] = $tid;
           }
         }
         elseif (is_array($node_field) && $field['save'] == 'both') {
           foreach ($node_field as $tid => $value) {
-            $node->taxonomy[$tid] = $tid;
+            $node->taxonomy[$field['vid']][$tid] = $tid;
           }
         }       
       }
@@ -229,17 +229,5 @@ function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
   }
 }
 
-/**
- * Helper function to clear node->taxonomy for specific vocabulary
- */
-function content_taxonomy_clear_taxonomy_array(&$node, $vid) {
-  if (is_array($node->taxonomy)) {
-    foreach ($node->taxonomy as $tid => $term) {
-      if (is_object($term) && $term->vid == $vid) {
-        unset($node->taxonomy[$tid]);
-      }
-    }
-  } 
-}
 
 ?>
