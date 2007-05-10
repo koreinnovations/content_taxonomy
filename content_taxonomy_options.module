@@ -38,7 +38,7 @@ function content_taxonomy_options_widget_info() {
  * Implementation of hook_widget_settings
  */
 function content_taxonomy_options_widget_settings($op, $widget) {
-  if ($widget['type'] == 'content_taxonomy_select') {
+  if ($widget['type'] == 'content_taxonomy_select' || $widget['widget']['type'] == 'content_taxonomy_select') {
     switch ($op) {
       case 'form':
         $form = array();
@@ -47,7 +47,7 @@ function content_taxonomy_options_widget_settings($op, $widget) {
         $options_term[0] = '---';
         foreach (taxonomy_get_vocabularies() as $voc) {
           foreach (taxonomy_get_tree($voc->vid) as $term) {
-            $options_term[$voc->name][$term->tid] = $term->name;
+            $options_term[$voc->name][$term->tid] = str_repeat('- ', $term->depth) . $term->name;
           }
         }      
         $form['optgroup'] = array(
