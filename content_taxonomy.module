@@ -61,7 +61,7 @@ function content_taxonomy_field_settings($op, $field) {
       foreach (taxonomy_get_vocabularies() as $voc) {
         $options_voc[$voc->vid] = $voc->name;
         foreach (taxonomy_get_tree($voc->vid) as $term) {
-          $options_term[$voc->name][$term->tid] = $term->name;
+          $options_term[$voc->name][$term->tid] = str_repeat('- ', $term->depth) . $term->name;
         }
       }
       
@@ -201,6 +201,9 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
   }
   else {
     foreach ($item as $key => $term) {
+      if (!is_object($term) && $key == 'value' && is_numeric($term)) {
+        $term = taxonomy_get_term($term);
+      }
       $output .= $term->name ." <br />";
     }
   }

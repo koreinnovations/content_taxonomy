@@ -22,10 +22,11 @@ function content_taxonomy_views_views_tables() {
 
   $fields = content_fields();
   $info = _content_type_info();
-
+  
   foreach ($fields as $field) {
     if ($field['type'] == 'content_taxonomy') {
       
+      //get out parent for opt groups
       foreach ($info['content types'] as $content_type) {
         foreach ($content_type['fields'] as $field_name => $field_info) {
           if ($field_name == $field['field_name']) {
@@ -36,46 +37,77 @@ function content_taxonomy_views_views_tables() {
         }
       }
       
-      $tables['term_node_'. $field['field_name']] = array(
-	      'name' => 'term_node', 
-        'provider' => 'internal', 
-        'join' => array( 
-          'left' => array( 
+      if ($field['save'] != 'tag') {
+        $db_info = content_database_info($field);
+        $tablename = $db_info['table'];
+        $fieldname = $field['field_name'] .'_value';
+        $table['name'] = $db_info['table'];
+    		$table['join'] = array(
+    		  'left' => array(
+            'table' => 'node',
+            'field' => 'vid',
+    		  ),
+          'right' => array(
+            'field' => 'vid',
+    		  ),
+    	  );
+      }
+      else {
+        $tablename = 'content_taxonomy_'. $field['field_name'];
+        $table['name'] = 'term_node';
+        $fieldname = "tid";
+    		$table['join'] = array(
+    		  'left' => array( 
             'table' => 'node', 
             'field' => 'nid', 
           ),
           'right' => array( 
             'field' => 'nid', 
-          ), 
-        ),
+          ),
+    	  );
+      }
+      
+      $tables[$tablename] = array();
+      $tables[$tablename] = $table;
+      
+      $tables[$tablename] += array( 
+        'provider' => 'internal', 
 	      'fields' => array( 
-          'name' => array(
-            'name' => 'Taxonomy Field: '. $field['field_name'],
+          $fieldname => array(
+            'name' => 'Content Taxonomy Field: '. $field['field_name'],
 	          'sortable' => TRUE,
-	          'handler' => 'views_handler_field_terms_by_parent',
-	          'handler' => array(
-	            'views_handler_field_terms_by_parent' => "No link", 
-	            'views_handler_field_terms_by_parent_link' => "With link"),
             'parent' => $field['tid'],
 	          'voc_id' => $field['vid'],
-	          'notafield' => TRUE,
+            'content_field' => $field,
+            'content_db_info' => $db_info,
           ),
         ),
         'filters' => array(
-          'tid' => array(
-            'name' => 'Taxonomy Field: '. $field['field_name'],
-            'list' => 'views_handler_filter_tid_by_parent',
+          $fieldname => array(
+            'name' => 'Content Taxonomy Field: '. $field['field_name'],
+            'list' => 'views_handler_filter_terms_by_parent',
             'list-type' => isset($field['multiple']) ? 'list' : 'select',
             'value-type' => 'array',
             'option' => 'string',
             'operator' => 'views_handler_operator_andor',
-            'handler' => 'views_handler_filter_tid_custom',
             'parent' => $field['tid'],
             'voc_id' => $field['vid'],
         	  'group' => $group_tid,
           ),
         )
       );
+      if ($field['save'] == 'tag') {
+        $tables[$tablename]['filters'][$fieldname]['handler'] = "views_handler_filter_tid_custom";
+        $tables[$tablename]['fields'][$fieldname]['handler'] = array( 
+          'content_taxonomy_views_field_terms_by_parent' => t('Show value'));
+        $tables[$tablename]['fields'][$fieldname]['notafield'] = TRUE; 
+      }
+      else {
+        $tables[$tablename]['fields'][$fieldname]['handler'] = array(
+          'content_taxonomy_views_field_handler_group' => t('Group multiple values'),
+          'content_taxonomy_views_field_handler_ungroup' => t('Do not group multiple values'));
+      }
+      
     }
   }
 
@@ -85,40 +117,42 @@ function content_taxonomy_views_views_tables() {
 /**
  * Display all the terms for a given parent term
  */
-function views_handler_field_terms_by_parent($fieldinfo, $fielddata, $value, $data) {
+function content_taxonomy_views_field_terms_by_parent($fieldinfo, $fielddata, $value, $data) {
   $terms = array();
   $names = array();
   
+  
   if ($fieldinfo['parent']) {    
-    $terms = content_taxonomy_terms_by_field($data->nid, $fieldinfo['voc_id'], $fieldinfo['parent']);
+    $terms = content_taxonomy_terms_by_field(node_load($data->nid), $fieldinfo['voc_id'], $fieldinfo['parent'], 1);
   }
   if (is_array($terms)) {
 	  foreach ($terms as $term) {
 	    $names[] = $term->name;
 	  }
-	
 	  return implode(', ', $names);
   }
 }
 
-/**
- * Display all the terms for a given parent term (links)
- */
-function views_handler_field_terms_by_parent_link($fieldinfo, $fielddata, $value, $data) {
-  if ($fieldinfo['parent']) {    
-    $terms = content_taxonomy_terms_by_field($data->nid, $fieldinfo['voc_id'], $fieldinfo['parent']);
+function content_taxonomy_views_field_handler_group($fieldinfo, $fielddata, $value, $data) {
+  if ($fieldinfo['content_field']['multiple']) {
+    $fielddata['options'] = 'default';
+    $result = content_views_field_handler_group($fieldinfo, $fielddata, $value, $data);
+    return $result;
   }
+  else {
+    return  content_taxonomy_views_field_handler_group($fieldinfo, $fielddata, $value, $data);
+  }
+}
 
-  if (is_array($terms)) {
-    $node->taxonomy = $terms;
-    return theme('links', taxonomy_link('taxonomy terms', $node));
-  }
+function content_taxonomy_views_field_handler_ungroup($fieldinfo, $fielddata, $value, $data) {
+  $term = taxonomy_get_term($value);
+  return $term->name;
 }
 
 /**
  * Create a list of terms for a given parent, optional with optgroups
  */
-function views_handler_filter_tid_by_parent($op, $filterinfo) {
+function views_handler_filter_terms_by_parent($op, $filterinfo) {
   $options = array();
   foreach (taxonomy_get_children($filterinfo['parent']) as $term) {
     $options[$term->tid] = $term->name;
@@ -134,5 +168,6 @@ function views_handler_filter_tid_by_parent($op, $filterinfo) {
   }
   return $options;
 }
+
 
 ?>

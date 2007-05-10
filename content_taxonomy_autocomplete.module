@@ -161,7 +161,12 @@ function content_taxonomy_autocomplete_load($field_name, $multiple = TRUE, $stri
   // this, "somecmpany, llc", "and ""this"" w,o.rks", foo bar
   $content_type_info = _content_type_info();
   $vid = $content_type_info['fields'][$field_name]['vid'];
-  $tid = $content_type_info['fields'][$field_name]['tid'];
+  if ($content_type_info['fields'][$field_name]['tid']) {
+    $tid = $content_type_info['fields'][$field_name]['tid'];
+  }
+  elseif ($content_type_info['fields'][$field_name]['parent']) {
+    $tid = $content_type_info['fields'][$field_name]['parent'];
+  }
   
   $regexp = '%(?:^|,\ *)("(?>[^"]*)(?>""[^"]* )*"|(?: [^",]*))%x';
   preg_match_all($regexp, $string, $matches);
