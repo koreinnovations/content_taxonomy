@@ -46,7 +46,7 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
       $form['autocomplete']['new_terms'] = array(
         '#type' => 'radios',
         '#title' => t('How to manage new inputed terms from a user?'),
-        '#default_value' => isset($field['new_terms']) ? $field['new_terms'] : 'insert',
+        '#default_value' => isset($widget['new_terms']) ? $widget['new_terms'] : 'insert',
         '#options' => array('insert' => t('Allow and insert new terms into the taxonomy tree'),
                             'deny' => t('Deny any new terms'),
                             ),
