@@ -81,6 +81,21 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
   $tid = $field['tid'];
   $depth = (!empty($field['depth'])) ? $field['depth'] : NULL;
   
+  //default values
+  $default_values = array();
+  if(is_array($node_field[$field['tid']])) {
+    $default_values = array_keys($node_field[$field['tid']]);
+  }
+  else {
+    if (is_array($field['widget']['default_value']['tids'])) {
+      $default_values = $field['widget']['default_value']['tids'];
+    }
+    else if (is_array($field['widget']['default_value'])) {
+      $default_values = array_keys($field['widget']['default_value']);
+     }
+  }
+  
+  
   switch ($op) {
     case 'form':
       $form = array();
@@ -92,12 +107,11 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
       switch ($field['widget']['type']) {
         case 'content_taxonomy_options':
           $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE, FALSE);
-          $default_values = is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : array();
-          
+        
           $form[$field['field_name']]['tids'] = array(
             '#type' => ($field['multiple']) ? 'checkboxes' : 'radios',
             '#title' => t($field['widget']['label']),
-            '#default_value' => isset($node_field[$field['tid']]) ? ($field['multiple'] ? $default_values : reset($default_values) ) : $field['widget']['default_value']['tids'],
+            '#default_value' => $field['multiple'] ? $default_values : reset($default_values),
             '#multiple' => ($field['multiple']) ? TRUE : FALSE,
             '#options' => $options,
             '#required' => $field['required'],
@@ -105,19 +119,20 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
           );
           break;
         
-        case 'content_taxonomy_select': 
+        case 'content_taxonomy_select':
+
           $options = array();
           if ($field['widget']['group_tid']) {   
             $options = content_taxonomy_options_groups($field);
           }
           else {
-            $options = content_taxonomy_options_array($vid,$tid,$depth,!$field['multiple'], TRUE);
+            $options = content_taxonomy_options_array($vid,$tid,$depth, !$field['multiple'], TRUE);
           }
-            
+          
           $form[$field['field_name']]['tids'] = array(
             '#type' => 'select',
             '#title' => t($field['widget']['label']),
-            '#default_value' => is_array($node_field[$field['tid']]) ? array_keys($node_field[$field['tid']]) : $field['widget']['default_value']['tids'],
+            '#default_value' => $default_values,
             '#multiple' => ($field['multiple']) ? TRUE : FALSE,
             '#options' => $options,
             '#required' => $field['required'],
@@ -136,7 +151,7 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
        
     case 'process form values':         
       if (isset($field['save']) && $field['save'] != 'tag') {
-        if ($field['multiple']) {
+        if ($field['multiple'] && is_array($node_field['tids'])) {
           foreach ($node_field['tids'] as $key => $tid) {                
             if ($tid != 0) $keys[$key] = $tid;
           }
