@@ -43,12 +43,6 @@ function content_taxonomy_field_settings($op, $field) {
         '#default_value' => isset($field['save']) ? $field['save'] : 'tag',
       );
       
-      $form['terms_as_links'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Show terms as links'),
-        '#default_value' => isset($field['terms_as_links']) ? $field['terms_as_links'] : 0,
-      );
-      
       $form['vocabulary'] = array(
         '#type' => 'fieldset',
         '#title' => t('Specify terms to show'),
@@ -128,7 +122,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       
     case 'update':
       global $cleared;
-      if (!is_array($cleared[$node->nid]) || !$cleared[$node->nid]) {
+      if (!is_array($cleared) || !$cleared[$node->nid]) {
         unset($node->taxonomy);
         $cleared[$node->nid] = true;
       }
@@ -194,7 +188,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
     return '';
   }
   
-  if ((is_array($field['terms_as_links']) && $field['terms_as_links']) || $formatter == 'link') {
+  if ($formatter == 'link') {
     foreach ($item as $key => $term) {
       $output .= l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description)) ." <br />";;
     }
@@ -217,7 +211,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
  *  @param Integer TID of a Parent
  */
 function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
-  if ($parent && $depth == 1) {
+  if (is_numeric($parent) && $depth == 1) {
     $result = db_query("SELECT n.tid FROM {term_hierarchy} h, {term_node} n WHERE
       n.nid = %d AND n.tid = h.tid AND h.parent = %d", $node->nid, $parent);
     
