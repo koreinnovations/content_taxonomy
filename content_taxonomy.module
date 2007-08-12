@@ -122,7 +122,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       
     case 'update':
       global $content_taxonomy_array_cleared;
-      if (!is_array($content_taxonomy_array_cleared[$node->nid]) || !$content_taxonomy_array_cleared[$node->nid]) {
+      if (!is_array($content_taxonomy_array_cleared) || !$content_taxonomy_array_cleared[$node->nid]) {
         unset($node->taxonomy);
         $content_taxonomy_array_cleared[$node->nid] = true;
       }
@@ -194,12 +194,15 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
   
   if ($formatter == 'link') {
     foreach ($item as $key => $term) {
-      $output .= l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description)) ." <br />";;
+      if (!is_object($term) && $key == 'value' && is_numeric($term) && $term != 0) {
+        $term = taxonomy_get_term($term);
+      }
+      $output .= l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description)) ." <br />";
     }
   }
   else {
     foreach ($item as $key => $term) {
-      if (!is_object($term) && $key == 'value' && is_numeric($term)) {
+      if (!is_object($term) && $key == 'value' && is_numeric($term) && $term != 0) {
         $term = taxonomy_get_term($term);
       }
       $output .= $term->name ." <br />";
