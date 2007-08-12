@@ -106,7 +106,7 @@ function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
       
       switch ($field['widget']['type']) {
         case 'content_taxonomy_options':
-          $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE, FALSE);
+          $options = content_taxonomy_options_array($vid, $field['tid'], $depth, FALSE, TRUE);
         
           $form[$field['field_name']]['tids'] = array(
             '#type' => ($field['multiple']) ? 'checkboxes' : 'radios',
