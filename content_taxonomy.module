@@ -121,22 +121,26 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       break;
       
     case 'update':
-      global $cleared;
-      if (!is_array($cleared) || !$cleared[$node->nid]) {
+      global $content_taxonomy_array_cleared;
+      if (!is_array($content_taxonomy_array_cleared[$node->nid]) || !$content_taxonomy_array_cleared[$node->nid]) {
         unset($node->taxonomy);
-        $cleared[$node->nid] = true;
+        $content_taxonomy_array_cleared[$node->nid] = true;
       }
       
     case 'insert':
       if (isset($field['save']) && $field['save'] != 'cck_table') {
         if (is_array($node_field['tids'])) {
           foreach ($node_field['tids'] as $tid) {
-            $node->taxonomy[$field['vid']][$tid] = $tid;
+            if ($tid) {
+              $node->taxonomy[$field['vid']][$tid] = $tid;
+            }
           }
         }
         elseif (is_array($node_field) && $field['save'] == 'both') {
           foreach ($node_field as $tid => $value) {
-            $node->taxonomy[$field['vid']][$tid] = $tid;
+            if ($tid) {
+              $node->taxonomy[$field['vid']][$tid] = $tid;
+            }
           }
         }       
       }
