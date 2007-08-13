@@ -115,19 +115,18 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       $widget_type = $field['widget']['type'];
       $function = $widget_type ."_field_load";
       if (function_exists($function)) {
-        $function($op, $node, $field, $node_field, $additions, $teaser, $page);
+        $function($op, $node, $field, $node_field, &$additions, $teaser, $page);
       }
       return $additions;
       break;
       
-    case 'update':
+    case 'submit': 
       global $content_taxonomy_array_cleared;
       if (!is_array($content_taxonomy_array_cleared) || !$content_taxonomy_array_cleared[$node->nid]) {
         unset($node->taxonomy);
         $content_taxonomy_array_cleared[$node->nid] = true;
       }
-      
-    case 'insert':
+  
       if (isset($field['save']) && $field['save'] != 'cck_table') {
         if (is_array($node_field['tids'])) {
           foreach ($node_field['tids'] as $tid) {
@@ -142,14 +141,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
               $node->taxonomy[$field['vid']][$tid] = $tid;
             }
           }
-        }       
-      }
-      
-      //widget specific saving of additional data
-      $widget_type = $field['widget']['type'];
-      $function = $widget_type ."_field_insert";
-      if (function_exists($function)) {
-        $function($op, $node, $field, $node_field, $teaser, $page);
+        }        
       }
       break;
       
@@ -213,9 +205,11 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
 
 /**
  *  Returns all term - node relation, optionally for a given parent
- *  @param Integer Node ID
+ * 
+ *  @param Object Node
  *  @param Integer Voc ID
  *  @param Integer TID of a Parent
+ *  @param Integer depth of hierarchy to load
  */
 function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
   if (is_numeric($parent) && $depth == 1) {
@@ -232,6 +226,5 @@ function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
     return taxonomy_node_get_terms_by_vocabulary($node->nid, $vid);
   }
 }
-
 
 ?>

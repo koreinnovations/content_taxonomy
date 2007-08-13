@@ -76,7 +76,6 @@ function content_taxonomy_options_widget_settings($op, $widget) {
  * Implementation of hook_widget().
  */
 function content_taxonomy_options_widget($op, &$node, $field, &$node_field) {
-  
   $vid = $field['vid'];
   $tid = $field['tid'];
   $depth = (!empty($field['depth'])) ? $field['depth'] : NULL;
