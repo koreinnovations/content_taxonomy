@@ -227,4 +227,22 @@ function content_taxonomy_terms_by_field($node, $vid, $parent = NULL, $depth) {
   }
 }
 
+/**
+ * Implementation of hook_form_alter
+ *
+ * hides the taxonomy form if there exists content taxonomy fields
+ */
+function content_taxonomy_form_alter($form_id, &$form) {
+  if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {   
+    $info = _content_type_info();
+    $content_type = $info['content types'][$form['type']['#value']];
+    foreach ($content_type['fields'] as $field_name => $field) {
+      if ($field['type'] == 'content_taxonomy') {
+        unset($form['taxonomy']);
+        break;
+      }
+    }
+  }
+}
+
 ?>
