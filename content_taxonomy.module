@@ -115,7 +115,7 @@ function content_taxonomy_field($op, &$node, $field, &$node_field, $teaser, $pag
       $widget_type = $field['widget']['type'];
       $function = $widget_type ."_field_load";
       if (function_exists($function)) {
-        $function($op, $node, $field, $node_field, &$additions, $teaser, $page);
+        $function($op, $node, $field, $node_field, $additions, $teaser, $page);
       }
       return $additions;
       break;
