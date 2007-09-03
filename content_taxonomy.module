@@ -197,7 +197,7 @@ function content_taxonomy_field_formatter($field, $item, $formatter, $node) {
       if (!is_object($term) && $key == 'value' && is_numeric($term) && $term != 0) {
         $term = taxonomy_get_term($term);
       }
-      $output .= $term->name ." <br />";
+      $output .= check_plain($term->name) ." <br />";
     }
   }
   return $output;
