@@ -79,7 +79,7 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
         '#autocomplete_path' => 'content_taxonomy/autocomplete/'. $field['field_name'] .'/'.$field['multiple'],
         '#default_value' => isset($node_field[$field['tid']]) ? content_taxonomy_autocomplete_merge_tags($node_field[$field['tid']], $vid, $tid) : $field['widget']['default_value']['values'],
         '#description' => t($field['widget']['description']),
-		    '#required' => $field['required'],
+		'#required' => $field['required'],
       );
       return $form;
       
@@ -88,7 +88,7 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
         form_set_error($field['field_name'] .'][value', t('You can provide only one value'));
       }
       if ($field['widget']['new_terms'] == 'deny') {
-        $tids = content_taxonomy_autocomplete_tags_get_tids($node_field['values'],$vid);
+        $tids = content_taxonomy_autocomplete_tags_get_tids($node_field['values'], $vid, $field['tid']);
         if (is_array($tids['non_existing_terms'])) {
           form_set_error($field['field_name'],t('New tags are not allowed'));
         }
@@ -96,7 +96,7 @@ function content_taxonomy_autocomplete_widget($op, &$node, $field, &$node_field)
       break;
         
     case 'process form values':
-      $all_tids = content_taxonomy_autocomplete_tags_get_tids($node_field['values'],$vid);
+      $all_tids = content_taxonomy_autocomplete_tags_get_tids($node_field['values'], $vid, $field['tid']);
       $node_field['tids'] = $all_tids['existing_tids'];
       if ($field['widget']['new_terms'] == 'insert') {
         if (is_array($all_tids['non_existing_terms'])) {
@@ -218,7 +218,7 @@ function content_taxonomy_autocomplete_load($field_name, $multiple = TRUE, $stri
  *  so we'll detect them here and process them independently.
  * @param $typed_input A string containing all comma separated tags. As the user typed it.
  */
-function content_taxonomy_autocomplete_tags_get_tids($typed_input, $vid) {
+function content_taxonomy_autocomplete_tags_get_tids($typed_input, $vid, $parent = 0) {
   // This regexp allows the following types of user input:
   // this, "somecmpany, llc", "and ""this"" w,o.rks", foo bar
   $typed_terms = content_taxonomy_autocomplete_split_tags($typed_input);
@@ -234,11 +234,22 @@ function content_taxonomy_autocomplete_tags_get_tids($typed_input, $vid) {
     // See if the term exists in the chosen vocabulary
     // and return the tid, otherwise, add a new record.
     $possibilities = taxonomy_get_term_by_name($typed_term);
+
     $typed_term_tid = NULL; // tid match if any.
     foreach ($possibilities as $possibility) {
       if ($possibility->vid == $vid) {
-        $result['existing_tids'][$possibility->tid] = $possibility->tid;
-        $typed_term_tid = $possibility->tid;
+        if ($parent) {
+          $parents = array();
+          $parents = taxonomy_get_parents($possibility->tid);
+          if (in_array($parent, array_keys($parents))) {
+            $result['existing_tids'][$possibility->tid] = $possibility->tid;
+            $typed_term_tid = $possibility->tid;  
+          }
+        }
+        else {
+          $result['existing_tids'][$possibility->tid] = $possibility->tid;
+          $typed_term_tid = $possibility->tid;
+        }
       }
     }
 
@@ -249,6 +260,7 @@ function content_taxonomy_autocomplete_tags_get_tids($typed_input, $vid) {
       );
     }
   }
+
   return $result;
 }
 
