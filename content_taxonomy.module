@@ -245,4 +245,54 @@ function content_taxonomy_form_alter($form_id, &$form) {
   }
 }
 
-?>
+
+/**
+ * Implementation of hook_token_list().
+ */
+function content_taxonomy_token_list($type = 'all') {
+  if ($type == 'field' || $type == 'all') {
+    $tokens = array();
+
+    $tokens['content_taxonomy']['term']  = t('Name of top taxonomy term');
+    $tokens['content_taxonomy']['tid']   = t('ID of top taxonomy term');
+    $tokens['content_taxonomy']['vocab'] = t('Name of top terms vocabulary');
+    $tokens['content_taxonomy']['vid']   = t('ID of top terms vocabulary');
+
+    return $tokens;
+  }
+}
+
+/**
+ * Implementation of hook_token_values().
+ */
+function content_taxonomy_token_values($type, $object = NULL) {
+  if ($type == 'field') {
+    // This ugly check is necessary because of some weird things going on
+    // inside the content_taxonomy module: it doesn't always pass the same
+    // object to CCK, and therefor Token doesn't always get a "content
+    // taxonomy field object" with the same structure.
+    if (isset($object['tids'])) {
+      // This one is necessary for submitting content.
+      $tid = reset($object['tids']);
+    }
+    elseif (is_array($object[0]) && is_object(reset($object[0]))) {
+      // This one is necessary for viewing content.
+      $term = reset($object[0]);
+      $tid = $term->tid;
+    }
+    else {
+      // This one is also sometimes necessary for viewing content...
+       $tid = reset(array_keys($object));
+    }
+
+    $term = taxonomy_get_term($tid);
+    $vocabulary = taxonomy_get_vocabulary($term->vid);
+
+    $tokens['term']  = $term->name;
+    $tokens['tid']   = $tid;
+    $tokens['vocab'] = $vocabulary->name;
+    $tokens['vid']   = $term->vid;
+
+    return $tokens;
+  }
+}
