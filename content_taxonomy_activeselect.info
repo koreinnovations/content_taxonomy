@@ -1,7 +1,0 @@
-; $Id$
-name = Content Taxonomy ActiveSelect
-description = Defines a activeselect widget type for content_taxonomy
-dependencies = content content_taxonomy activeselect
-package = CCK
-
-

@@ -1,0 +1,9 @@
+; $Id$
+name = Content Taxonomy Tree
+description = Defines a dynamic tree widget for Content Taxonomy
+dependencies[] = content 
+dependencies[] = content_taxonomy 
+dependencies[] = taxonomy
+dependencies[] = taxonomy_manager
+package = CCK
+core = 6.x

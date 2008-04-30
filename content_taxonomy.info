@@ -1,7 +1,8 @@
 ; $Id$
 name = Content Taxonomy
 description = Defines a field type for taxonomy terms
-dependencies = content taxonomy
+dependencies[] = content 
+dependencies[] = taxonomy
 package = CCK
-
+core = 6.x
 

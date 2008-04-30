@@ -1,7 +1,10 @@
 ; $Id$
 name = Content Taxonomy Options
 description = Defines a option widget type for content_taxonomy for selects, radios/checkboxes
-dependencies = content content_taxonomy
+dependencies[] = content 
+dependencies[] = content_taxonomy 
+dependencies[] = taxonomy
+dependencies[] = optionwidgets
 package = CCK
-
+core = 6.x
 
