@@ -38,7 +38,7 @@ function content_taxonomy_field_info() {
   return array(
     'content_taxonomy' => array(
       'label' => t('Content Taxonomy Fields'),
-      'description' => t('Stores terms for the nodes in the database.'),
+      'description' => t('Stores terms for nodes in the database.'),
       'callbacks' => array(
         'tables' => CONTENT_CALLBACK_DEFAULT,
         'arguments' => CONTENT_CALLBACK_DEFAULT,
@@ -57,8 +57,8 @@ function content_taxonomy_field_settings($op, $field) {
             
       $form['save_term_node'] = array(
         '#type' => 'checkbox', 
-        '#title' => t('Save values additionally in the term_node table.'),
-        '#default_value' => isset($field['save_term_node']) ? $field['save_term_node'] : 0,
+        '#title' => t('Save values additionally to the core taxonomy system (into the \'term_node\' table).'),
+        '#default_value' => is_numeric($field['save_term_node']) ? $field['save_term_node'] : 0,
         '#description' => t('If this option is set, saving of terms is additionally handled by the taxonomy module. So saved terms from Content Taxonomy fields will appear as any other terms saved by the core taxonomy module. Set this option if you are using any other taxonomy application, like tagadelic. Otherwise terms are only saved in the cck tables and can only be accessed via the node or a view'), 
       );
       
@@ -81,14 +81,14 @@ function content_taxonomy_field_settings($op, $field) {
       $form['vocabulary']['vid'] = array(
         '#title' => t('Vocabulary'),
         '#type' => 'select',
-        '#default_value' => isset($field['vid']) ? $field['vid'] : 0,
+        '#default_value' => is_numeric($field['vid']) ? $field['vid'] : 0,
         '#options' => $options_voc,
       );
       
       $form['vocabulary']['tid'] = array(
-        '#title' => t('Terms'),
+        '#title' => t('Parent Term'),
         '#type' => 'select',
-        '#default_value' => isset($field['tid']) ? $field['tid'] : 0,
+        '#default_value' => is_numeric($field['tid']) ? $field['tid'] : 0,
         '#options' => $options_term,
         '#description' => t('If any term is selected here, only child terms of the selected are going to be shown in the field. Otherwise the whole vocabulary selected above'),
       );
@@ -96,14 +96,15 @@ function content_taxonomy_field_settings($op, $field) {
       $form['vocabulary']['depth'] = array(
         '#type' => 'textfield',
         '#title' => t('Depth of taxonomy tree'),
-        '#default_value' => isset($field['depth']) ? $field['depth'] : 1,
-        '#description' => t('leave blank for unlimited depth'),
+        '#default_value' => is_numeric($field['depth']) ? $field['depth'] : '',
+        '#description' => t('Leave this field blank to show the whole hierarchy. By setting a value, the depth of the hierarchy shown can be limited'),
       );
       
       $form['vocabulary']['show_depth'] = array(
         '#type' => 'checkbox', 
         '#title' => t('Indent child terms with \' - \' signs'),
-        '#default_value' => isset($field['show_depth']) ? $field['show_depth'] : 1,
+        '#default_value' => is_numeric($field['show_depth']) ? $field['show_depth'] : 1,
+        '#description' => t('This option is only relevant for hierarchical vocabularies. If this option is checked, the hierarchy gets visualized by indenting child terms, otherwise it\'s a flat list'),
       );
       return $form;   
     
@@ -177,24 +178,32 @@ function theme_content_taxonomy_formatter_link($element) {
   return l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description));
 }
 
+/**
+ * Implementation of hook_content_is_empty().
+ */
+function content_taxonomy_content_is_empty($item, $field) {
+  if (empty($item['value']) || $item['value'] == 0) {
+    return TRUE;
+  }
+  return FALSE;
+}
 
+/**
+ * Called by content_allowed_values to create the $options array for the content_taxonomy_options
+ */
 function content_taxonomy_allowed_values($field) {
   $options = array();
   
+  //for opt groups call different function
   if (isset($field['widget']['group_tid']) && $field['widget']['group_tid'] != 0) {
     return content_taxonomy_allowed_values_groups($field);
   }
   
-  $depth = (isset($field['depth']) && is_numeric($field['depth'])) ? $field['depth'] : NULL;
+  $depth = (is_numeric($field['depth'])) ? $field['depth'] : NULL;
+
+  $tree = taxonomy_get_tree($field['vid'], $field['tid'], -1, $depth);
   
-  if ($depth == 1) {
-    $tree = taxonomy_get_children($field['tid'], $field['vid']);
-  }
-  else {
-    $tree = taxonomy_get_tree($field['vid'], $field['tid'], -1, $depth);
-  }
-  
-  if ($tree) {
+  if (is_array($tree)) {
     foreach ($tree as $term) {
       if ($field['show_depth']) {
         $value = str_repeat(' - ', $term->depth) . $term->name;
@@ -209,7 +218,9 @@ function content_taxonomy_allowed_values($field) {
   return $options;
 }
 
-
+/** 
+ * Creating Opt Groups for content_taxonomy_options
+ */
 function content_taxonomy_allowed_values_groups($field) {
   $options = array();
   $parent = $field['tid'];
