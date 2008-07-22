@@ -149,7 +149,7 @@ class ContentTaxonomyTest extends ContentCrudTestCase {
     $this->assertText($terms[1]->name, 'Terms displayed');
     $this->assertNoText($terms[2]->name, 'Term not displayed');
     
-    ///Edit the node and select different values
+    //Edit the node and select different values
     $edit = array();
     $edit[$field_name.'[value]['. $terms[0]->tid .']'] = FALSE;
     $edit[$field_name.'[value]['. $terms[1]->tid .']'] = $terms[1]->tid;
@@ -173,6 +173,25 @@ class ContentTaxonomyTest extends ContentCrudTestCase {
     $this->assertText($terms[2]->name, 'Terms displayed');
     $this->assertNoText($terms[0]->name, 'Term1 not displayed');
     
+    //Edit the node and unselect values
+    $edit = array();
+    $edit[$field_name.'[value]['. $terms[1]->tid .']'] = FALSE;
+    $edit[$field_name.'[value]['. $terms[2]->tid .']'] = FALSE;
+    $this->drupalPost('node/'. $node->nid .'/edit', $edit, 'Save');
+    $node = node_load($node->nid, NULL, TRUE);
+    $in_term_node = db_result(db_query("SELECT tid FROM {term_node} WHERE nid = %d", $node->nid));
+    $this->assertFalse($in_term_node, "Terms not in term_node table");
+    $tids = array();
+    foreach ($node->{$field_name} as $key => $value) {
+      $tids[$value['value']] = $value['value'];
+    }
+    if (in_array($terms[2]->tid, $tids) || in_array($terms[1]->tid, $tids) || in_array($terms[0]->tid, $tids)) {
+      $this->fail("Terms deleted");
+    }
+    $this->drupalGet('node/'. $node->nid);
+    $this->assertNoText($terms[1]->name, 'Terms not displayed');
+    $this->assertNoText($terms[2]->name, 'Terms not displayed');
+    $this->assertNoText($terms[0]->name, 'Terms not displayed');
     
     
     /**
@@ -295,6 +314,30 @@ class ContentTaxonomyTest extends ContentCrudTestCase {
     $this->assertText($terms[1]->name, 'Terms displayed');
     $this->assertText($terms[2]->name, 'Terms displayed');
     $this->assertNoText($terms[0]->name, 'Term1 not displayed');
+    
+    //Edit the node and unselect values
+    $edit = array();
+    $edit[$field_name.'[value]['. $terms[1]->tid .']'] = FALSE;
+    $edit[$field_name.'[value]['. $terms[2]->tid .']'] = FALSE;
+    $this->drupalPost('node/'. $node->nid .'/edit', $edit, 'Save');
+    $node = node_load($node->nid, NULL, TRUE);
+    $in_term_node1 = db_result(db_query("SELECT tid FROM {term_node} WHERE nid = %d AND tid = %d", $node->nid, $terms[0]->tid));
+    $this->assertFalse($in_term_node1, "Term deleted term_node table");
+    $in_term_node2 = db_result(db_query("SELECT tid FROM {term_node} WHERE nid = %d AND tid = %d", $node->nid, $terms[1]->tid));
+    $this->assertFalse($in_term_node2, "Term deleted term_node table");
+    $in_term_node3 = db_result(db_query("SELECT tid FROM {term_node} WHERE nid = %d AND tid = %d", $node->nid, $terms[2]->tid));
+    $this->assertFalse($in_term_node3, "Term deleted term_node table");
+    $tids = array();
+    foreach ($node->{$field_name} as $key => $value) {
+      $tids[$value['value']] = $value['value'];
+    }
+    if (in_array($terms[2]->tid, $tids) || in_array($terms[1]->tid, $tids) || in_array($terms[0]->tid, $tids)) {
+      $this->fail("Terms deleted");
+    }
+    $this->drupalGet('node/'. $node->nid);
+    $this->assertNoText($terms[1]->name, 'Terms not displayed');
+    $this->assertNoText($terms[2]->name, 'Terms not displayed');
+    $this->assertNoText($terms[0]->name, 'Terms not displayed');
   }
   
 }
