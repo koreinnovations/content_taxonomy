@@ -62,12 +62,6 @@ function content_taxonomy_field_settings($op, $field) {
         '#description' => t('If this option is set, saving of terms is additionally handled by the taxonomy module. So saved terms from Content Taxonomy fields will appear as any other terms saved by the core taxonomy module. Set this option if you are using any other taxonomy application, like tagadelic. Otherwise terms are only saved in the cck tables and can only be accessed via the node or a view'), 
       );
       
-      $form['vocabulary'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Specify terms to show'),
-        '#collapsible' => TRUE,
-      );
-      
       $options_term = array();
       $options_voc = array();
       $options_term[0] = '---';
@@ -78,38 +72,59 @@ function content_taxonomy_field_settings($op, $field) {
         }
       }
       
-      $form['vocabulary']['vid'] = array(
+      $form['vid'] = array(
         '#title' => t('Vocabulary'),
         '#type' => 'select',
         '#default_value' => is_numeric($field['vid']) ? $field['vid'] : 0,
         '#options' => $options_voc,
+        '#description' => t('Terms of the selected vocabulary get exposed to the field'),
       );
       
-      $form['vocabulary']['tid'] = array(
+      $form['hierarchical_vocabulary'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Advanced settings for hierarchical vocabularies'),
+        '#collapsible' => TRUE,
+      );
+      
+      $form['hierarchical_vocabulary']['tid'] = array(
         '#title' => t('Parent Term'),
         '#type' => 'select',
         '#default_value' => is_numeric($field['tid']) ? $field['tid'] : 0,
         '#options' => $options_term,
-        '#description' => t('If any term is selected here, only child terms of the selected are going to be shown in the field. Otherwise the whole vocabulary selected above'),
+        '#description' => t('If any term is selected here, only child terms of the selected are going to be exposed the field. Otherwise the whole vocabulary selected above'),
       );
 
-      $form['vocabulary']['depth'] = array(
+      $form['hierarchical_vocabulary']['depth'] = array(
         '#type' => 'textfield',
         '#title' => t('Depth of taxonomy tree'),
         '#default_value' => is_numeric($field['depth']) ? $field['depth'] : '',
-        '#description' => t('Leave this field blank to show the whole hierarchy. By setting a value, the depth of the hierarchy shown can be limited'),
+        '#description' => t('By setting a numeric value, the depth of the hierarchy shown can be limited. Leave this field blank to show the whole hierarchy.'),
       );
       
-      $form['vocabulary']['show_depth'] = array(
+      $form['hierarchical_vocabulary']['show_depth'] = array(
         '#type' => 'checkbox', 
         '#title' => t('Indent child terms with \' - \' signs'),
         '#default_value' => is_numeric($field['show_depth']) ? $field['show_depth'] : 1,
-        '#description' => t('This option is only relevant for hierarchical vocabularies. If this option is checked, the hierarchy gets visualized by indenting child terms, otherwise it\'s a flat list'),
+        '#description' => t('If this option is checked, the hierarchy gets visualized by indenting child terms, otherwise it\'s a flat list'),
       );
+      
+      $form['advanced'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Advanced settings'),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+      $form['advanced']['hide_taxonomy_fields'] = array(
+        '#type' => 'checkbox', 
+        '#title' => t('Hide default taxonomy fields on the node form'),
+        '#default_value' => is_numeric($field['hide_taxonomy_fields']) ? $field['hide_taxonomy_fields'] : 1,
+        '#description' => t('If this option is set for at least one Content Taxonomy Field per Content Type, default fields from the core Taxonomy module get hidden.'),
+      );
+      
       return $form;   
     
     case 'save':
-      return array('save_term_node', 'vid', 'tid', 'depth', 'show_depth');
+      return array('save_term_node', 'vid', 'tid', 'depth', 'show_depth', 'hide_taxonomy_fields');
     
     case 'database columns':
       return array(
@@ -292,4 +307,20 @@ function content_taxonomy_token_values($type, $object = NULL) {
   }
 }
 
-?>
+/**
+ * Implementation of hook_form_alter().
+ *
+ * hides the taxonomy form if there exists a content taxonomy field, which is set to 'hide default taxonomy fields'
+ */
+function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
+  if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {
+    $info = _content_type_info();
+    $content_type = $info['content types'][$form['type']['#value']];
+    foreach ($content_type['fields'] as $field_name => $field) {
+      if ($field['type'] == 'content_taxonomy' && $field['hide_taxonomy_fields']) {
+        unset($form['taxonomy']);
+        break;
+      }
+    }
+  }
+}
