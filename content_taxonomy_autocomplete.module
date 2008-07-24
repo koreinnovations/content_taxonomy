@@ -6,16 +6,6 @@
  * Defines a widget type for content_taxonomy with autocomplete
  **/
 
-/**
- * Implementation of hook_help().
- **/
-function content_taxonomy_autocomplete_help($section) {
-  switch ($section) {
-    case 'admin/modules#description':
-      return t('Defines a widget type for content_taxonomy with autocomplete. <em>Note: Requires content.module.</em>');
-  }
-}
-
 
 /**
  * Implementation of hook_theme().
@@ -68,30 +58,23 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
       
       $form['autocomplete'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Autocomplete'),
+        '#title' => t('Settings for Autocompletes'),
         '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
+        '#weight' => 10,
       );
       $form['autocomplete']['new_terms'] = array(
         '#type' => 'radios',
-        '#title' => t('New terms from to user:'),
+        '#title' => t('New terms typed in by the user'),
         '#default_value' => isset($widget['new_terms']) ? $widget['new_terms'] : 'insert',
         '#options' => array('insert' => t('Allow and insert new terms into the taxonomy tree'),
                             'deny' => t('Deny any new terms'),
                             ),
       );
-      $options_term = array();
-      $options_term[0] = '---';
-      foreach (taxonomy_get_vocabularies() as $voc) {
-        foreach (taxonomy_get_tree($voc->vid) as $term) {
-          $options_term[$voc->name][$term->tid] = str_repeat('- ', $term->depth) . $term->name;
-        }
-      }
       $form['autocomplete']['extra_parent'] = array(
         '#type' => 'select', 
         '#title' => t('Extra Parent for new terms'), 
-        '#options' => $options_term, 
-        '#description' => t('This setting is only relevant if you have set "Allow and insert new terms into the taxonomy tree". If you select any term here, new terms will get children of the selected one, otherwise new terms get children of the parent term selected in the data settings'),
+        '#options' => _content_taxonomy_get_all_terms(), 
+        '#description' => t('This setting is only relevant if you have set "Allow and insert new terms into the taxonomy tree". If you select any term here, new terms will get children of the selected one, otherwise new terms get children of the parent term selected in the data settings.'),
       );
       
       return $form;
@@ -168,6 +151,11 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
   return $element;
 }
 
+/**
+ * Validation function for the content_taxonomy_autocomplete element
+ *
+ * parses input, handles new terms (depending on settings) and sets the values as needed for storing the data
+ */
 function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $field_name = $element['#field_name'];
   $field = content_fields($field_name);
@@ -191,6 +179,10 @@ function content_taxonomy_autocomplete_validate($element, &$form_state) {
   form_set_value($element, $values, $form_state);
 }
 
+/**
+ * Helper function to transpose the values returned by submitting the content_taxonomy_autcomplete
+ * to the format to be stored in the field
+ */
 function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $element) {
   $existing_tids = is_array($extracted_ids['existing_tids']) ? $extracted_ids['existing_tids'] : array();
   $new_tids = array();
@@ -209,6 +201,10 @@ function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $elemen
 
 }
 
+/**
+ * Helper function to transpose the values as stored in the database
+ * to the format the content_taxonomy_autocomplete
+ */
 function content_taxonomy_autocomplete_data2form($element, $values, $field) {
   $terms = array();
   foreach ($values as $delta => $entry) {
@@ -330,6 +326,7 @@ function content_taxonomy_autocomplete_tags_get_tids($typed_input, $vid, $parent
 
 /**
  * Insert new tags
+ *
  * @param $nid the node id
  * @param $terms an array of all <strong>nonexisting</strong> terms.
  * @return an array of newly inserted term ids
@@ -380,4 +377,3 @@ function theme_content_taxonomy_autocomplete($element) {
   return $element['#children'];
 }
 
-?>

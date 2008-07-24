@@ -62,14 +62,9 @@ function content_taxonomy_field_settings($op, $field) {
         '#description' => t('If this option is set, saving of terms is additionally handled by the taxonomy module. So saved terms from Content Taxonomy fields will appear as any other terms saved by the core taxonomy module. Set this option if you are using any other taxonomy application, like tagadelic. Otherwise terms are only saved in the cck tables and can only be accessed via the node or a view'), 
       );
       
-      $options_term = array();
       $options_voc = array();
-      $options_term[0] = '---';
       foreach (taxonomy_get_vocabularies() as $voc) {
         $options_voc[$voc->vid] = $voc->name;
-        foreach (taxonomy_get_tree($voc->vid) as $term) {
-          $options_term[$voc->name][$term->tid] = str_repeat('- ', $term->depth) . $term->name;
-        }
       }
       
       $form['vid'] = array(
@@ -90,7 +85,7 @@ function content_taxonomy_field_settings($op, $field) {
         '#title' => t('Parent Term'),
         '#type' => 'select',
         '#default_value' => is_numeric($field['tid']) ? $field['tid'] : 0,
-        '#options' => $options_term,
+        '#options' => _content_taxonomy_get_all_terms(),
         '#description' => t('If any term is selected here, only child terms of the selected are going to be exposed the field. Otherwise the whole vocabulary selected above'),
       );
 
@@ -99,13 +94,6 @@ function content_taxonomy_field_settings($op, $field) {
         '#title' => t('Depth of taxonomy tree'),
         '#default_value' => is_numeric($field['depth']) ? $field['depth'] : '',
         '#description' => t('By setting a numeric value, the depth of the hierarchy shown can be limited. Leave this field blank to show the whole hierarchy.'),
-      );
-      
-      $form['hierarchical_vocabulary']['show_depth'] = array(
-        '#type' => 'checkbox', 
-        '#title' => t('Indent child terms with \' - \' signs'),
-        '#default_value' => is_numeric($field['show_depth']) ? $field['show_depth'] : 1,
-        '#description' => t('If this option is checked, the hierarchy gets visualized by indenting child terms, otherwise it\'s a flat list'),
       );
       
       $form['advanced'] = array(
@@ -124,7 +112,7 @@ function content_taxonomy_field_settings($op, $field) {
       return $form;   
     
     case 'save':
-      return array('save_term_node', 'vid', 'tid', 'depth', 'show_depth', 'hide_taxonomy_fields');
+      return array('save_term_node', 'vid', 'tid', 'depth', 'hide_taxonomy_fields');
     
     case 'database columns':
       return array(
@@ -228,7 +216,7 @@ function content_taxonomy_allowed_values($field) {
   
   if (is_array($tree)) {
     foreach ($tree as $term) {
-      if ($field['show_depth']) {
+      if ($field['widget']['show_depth']) {
         $value = str_repeat(' - ', $term->depth) . $term->name;
       }
       else {
@@ -254,12 +242,12 @@ function content_taxonomy_allowed_values_groups($field) {
   //if children in no group
   $default_terms = taxonomy_get_children($parent);
   foreach ($default_terms as $default_term) {
-    $options[$default_term->tid] = $default_term->name;
+    $options[$default_term->tid] = check_plain($default_term->name);
   }
   
   foreach (taxonomy_get_children($group_parent) as $group) {
     foreach (taxonomy_get_children($group->tid) as $term) {
-      $options[$group->name][$term->tid] = $term->name;
+      $options[$group->name][$term->tid] = check_plain($term->name);
       unset($options[$term->tid]);
     }
   }
@@ -334,4 +322,22 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
       }
     }
   }
+}
+
+/** 
+ * Helper functions that returns all terms group by their vocabulary
+ *
+ * needed for some settings forms
+ */
+function _content_taxonomy_get_all_terms() {
+  static $options = array();
+  if (!count($options)) {
+    $options[0] = '---';
+    foreach (taxonomy_get_vocabularies() as $voc) {
+      foreach (taxonomy_get_tree($voc->vid) as $term) {
+        $options[$voc->name][$term->tid] = str_repeat('- ', $term->depth) . $term->name;
+      }
+    } 
+  }
+  return $options;
 }
