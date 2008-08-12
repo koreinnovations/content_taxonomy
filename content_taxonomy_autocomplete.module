@@ -54,8 +54,6 @@ function content_taxonomy_autocomplete_widget_info() {
 function content_taxonomy_autocomplete_widget_settings($op, $widget) {
   switch ($op) {
     case 'form':
-      $form = array();
-      
       $form['autocomplete'] = array(
         '#type' => 'fieldset',
         '#title' => t('Settings for Autocompletes'),
@@ -74,13 +72,29 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
         '#type' => 'select', 
         '#title' => t('Extra Parent for new terms'), 
         '#options' => _content_taxonomy_get_all_terms(), 
+        '#default_value' => (isset($widget['extra_parent']) && is_numeric($widget['extra_parent'])) ? $widget['extra_parent'] : 0,
         '#description' => t('This setting is only relevant if you have set "Allow and insert new terms into the taxonomy tree". If you select any term here, new terms will get children of the selected one, otherwise new terms get children of the parent term selected in the data settings.'),
       );
       
+      $form['autocomplete']['maxlength'] = array(
+        '#type' => 'textfield', 
+        '#title' => t('Maximum length of autocomplete'), 
+        '#default_value' => (isset($widget['maxlength']) && is_numeric($widget['maxlength'])) ? $widget['maxlength'] : 255,
+        '#element_validate' => array('_content_taxonomy_autocomplete_widget_settings_maxlength_validate'),
+        '#required' => TRUE,
+        '#description' => t('Defines how many characters can be typed into the autocomplete field. For values higher than 255, remember that one term name can not be longer than 255 (would be cutted), nevertheless it\'s not a problem for a comma seperated list.'),
+      );
       return $form;
 
     case 'save':
-      return array('new_terms', 'extra_parent');
+      return array('new_terms', 'extra_parent', 'maxlength');
+  }
+}
+
+function _content_taxonomy_autocomplete_widget_settings_maxlength_validate($element, &$form_state) {
+  $value = $form_state['values']['maxlength'];
+  if (!is_numeric($value) || intval($value) != $value || $value <= 0) {
+    form_error($element, t('"Maximum length" must be a positive integer.'));
   }
 }
 
@@ -136,7 +150,6 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
   if (!$form_state['submitted'] || $form_state['clicked_button']['#value'] == t('Preview')) {
     $element['#value'] = content_taxonomy_autocomplete_data2form($element, $element['#value'], $field);
   }
-
   $element[$field_key] = array(
     '#type' => 'textfield',
     '#default_value' => isset($element['#value']) ? $element['#value'] : '',
@@ -147,6 +160,7 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
     '#title' => $element['#title'],
     '#required' => $element['#required'],
     '#description' => $element['#description'],
+    '#maxlength' => !empty($field['widget']['maxlength']) ? $field['widget']['maxlength'] : 255,
   );
   return $element;
 }
