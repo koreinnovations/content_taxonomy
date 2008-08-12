@@ -37,7 +37,7 @@ function content_taxonomy_autocomplete_menu() {
 function content_taxonomy_autocomplete_widget_info() {
   return array(
     'content_taxonomy_autocomplete' => array(
-      'label' => t('Autocomplete'),
+      'label' => t('Autocomplete (Freetagging)'),
       'field types' => array('content_taxonomy'),
       'multiple values' => CONTENT_HANDLE_MODULE,
       'callbacks' => array(
@@ -62,9 +62,9 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
       );
       $form['autocomplete']['new_terms'] = array(
         '#type' => 'radios',
-        '#title' => t('New terms typed in by the user'),
+        '#title' => t('Freetagging settings'),
         '#default_value' => isset($widget['new_terms']) ? $widget['new_terms'] : 'insert',
-        '#options' => array('insert' => t('Allow and insert new terms into the taxonomy tree'),
+        '#options' => array('insert' => t('Allow and insert new terms by the user into the vocabulary'),
                             'deny' => t('Deny any new terms'),
                             ),
       );
@@ -73,7 +73,7 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
         '#title' => t('Extra Parent for new terms'), 
         '#options' => _content_taxonomy_get_all_terms(), 
         '#default_value' => (isset($widget['extra_parent']) && is_numeric($widget['extra_parent'])) ? $widget['extra_parent'] : 0,
-        '#description' => t('This setting is only relevant if you have set "Allow and insert new terms into the taxonomy tree". If you select any term here, new terms will get children of the selected one, otherwise new terms get children of the parent term selected in the data settings.'),
+        '#description' => t('This setting is only relevant if you have selected "Allow and insert new terms by the user into the vocabulary". If you select any term here, new terms will get children of the selected one, otherwise new terms get children of the parent term (root, if no parent selected) selected in the global settings.'),
       );
       
       $form['autocomplete']['maxlength'] = array(
@@ -82,7 +82,7 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
         '#default_value' => (isset($widget['maxlength']) && is_numeric($widget['maxlength'])) ? $widget['maxlength'] : 255,
         '#element_validate' => array('_content_taxonomy_autocomplete_widget_settings_maxlength_validate'),
         '#required' => TRUE,
-        '#description' => t('Defines how many characters can be typed into the autocomplete field. For values higher than 255, remember that one term name can not be longer than 255 (would be cutted), nevertheless it\'s not a problem for a comma seperated list.'),
+        '#description' => t('Defines how many characters can be typed into the autocomplete field. For values higher than 255, remember that one term name can not be longer than 255 (would be cutted), nevertheless it\'s not a problem for multiple values, separated by commas.'),
       );
       return $form;
 
