@@ -204,11 +204,8 @@ function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $elemen
     if ($field['widget']['extra_parent']) {
       $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], $field['widget']['extra_parent']);
     } 
-    else if ($tid && $depth == 1) {
-     $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], $field['tid']);
-    }
     else {
-      $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms']);          
+      $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], $field['tid']);          
     }
   }
   return content_transpose_array_rows_cols(array($element['#columns'][0] => array_merge($existing_tids, $new_tids)));
