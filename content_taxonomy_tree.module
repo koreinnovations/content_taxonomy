@@ -111,7 +111,7 @@ function content_taxonomy_tree_process($element, $edit, &$form_state, $form) {
     '#type' => 'taxonomy_manager_tree',
     '#default_value' => isset($element['#value']) ? $element['#value'] : '',
     '#vid' => $field['vid'],
-    '#parent' => $field['tid'], 
+    '#parent' => content_taxonomy_field_get_parent($field), 
     '#default_value' => is_array($element['#value']) ? $element['#value'] : array(),
     '#render_whole_tree' => TRUE,
     '#pager' => FALSE,

@@ -81,12 +81,25 @@ function content_taxonomy_field_settings($op, $field) {
         '#collapsible' => TRUE,
       );
       
-      $form['hierarchical_vocabulary']['tid'] = array(
+      $form['hierarchical_vocabulary']['parent'] = array(
         '#title' => t('Parent Term'),
         '#type' => 'select',
-        '#default_value' => is_numeric($field['tid']) ? $field['tid'] : 0,
+        '#default_value' => is_numeric($field['parent']) ? $field['parent'] : 0,
         '#options' => _content_taxonomy_get_all_terms(),
         '#description' => t('If any term is selected here, only child terms of the selected are going to be exposed the field. Otherwise the whole vocabulary selected above'),
+      );
+      $form['hierarchical_vocabulary']['parent_php_code_fieldset'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Advanced PHP code'),
+        '#collapsible' => TRUE,
+        '#collapsed' => empty($field['parent_php_code']) ,
+      );
+      $form['hierarchical_vocabulary']['parent_php_code_fieldset']['parent_php_code'] = array(
+        '#title' => t('PHP Code for selecting the parent term'),
+        '#type' => 'textarea',
+        '#default_value' => !empty($field['parent_php_code']) ? $field['parent_php_code'] : '',
+        '#rows' => 3,
+        '#description' => t('Advanced usage only: PHP code that returns the parent term ID. Should not include &lt;?php ?&gt; delimiters. If this field is filled out, the ID returned by this code will override the selected parent above.'),
       );
 
       $form['hierarchical_vocabulary']['depth'] = array(
@@ -112,7 +125,7 @@ function content_taxonomy_field_settings($op, $field) {
       return $form;   
     
     case 'save':
-      return array('save_term_node', 'vid', 'tid', 'depth', 'hide_taxonomy_fields');
+      return array('save_term_node', 'vid', 'parent', 'parent_php_code', 'depth', 'hide_taxonomy_fields');
     
     case 'database columns':
       return array(
@@ -206,13 +219,13 @@ function content_taxonomy_allowed_values($field) {
   $options = array();
   
   //for opt groups call different function
-  if ($field['widget']['group_tid']) {
+  if (isset($field['widget']['group_parent']) && $field['widget']['group_parent'] > 0) {
     return content_taxonomy_allowed_values_groups($field);
   }
   
   $depth = (is_numeric($field['depth'])) ? $field['depth'] : NULL;
 
-  $tree = taxonomy_get_tree($field['vid'], $field['tid'], -1, $depth);
+  $tree = taxonomy_get_tree($field['vid'], content_taxonomy_field_get_parent($field), -1, $depth);
   
   if (is_array($tree)) {
     foreach ($tree as $term) {
@@ -236,8 +249,8 @@ function content_taxonomy_allowed_values($field) {
  */
 function content_taxonomy_allowed_values_groups($field) {
   $options = array();
-  $parent = $field['tid'];
-  $group_parent = $field['widget']['group_tid'];
+  $parent = content_taxonomy_field_get_parent($field);
+  $group_parent = $field['widget']['group_parent'];
   
   //if children in no group
   $default_terms = taxonomy_get_children($parent);
@@ -253,6 +266,21 @@ function content_taxonomy_allowed_values_groups($field) {
   }
 
   return $options;
+}
+
+/**
+ * Returns the parent term ID for one field
+ * can be 0 is no parent is selected or if the php code returns 0
+ *
+ * use this function instead of directly accessing $field['parent'] because of possible php code
+ *
+ * @param $field The Content Taxonomy Field
+ */
+function content_taxonomy_field_get_parent($field) {
+  if (!empty($field['parent_php_code'])) {
+    return eval($field['parent_php_code']);
+  }
+  return $field['parent'];
 }
 
 /**

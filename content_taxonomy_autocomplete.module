@@ -176,7 +176,7 @@ function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $field_key  = $element['#columns'][0];
   $value = $form_state['values'][$element['#field_name']][$field_key];
  
-  $extracted_ids = content_taxonomy_autocomplete_tags_get_tids($value, $field['vid'], $field['tid'], $field['widget']['extra_parent']);
+  $extracted_ids = content_taxonomy_autocomplete_tags_get_tids($value, $field['vid'], content_taxonomy_field_get_parent($field), $field['widget']['extra_parent']);
   
   if (!$field['multiple'] && count(content_taxonomy_autocomplete_split_tags($value, $field['vid'])) > 1) {
     form_set_error($field['field_name'] .'][value', t('You can provide only one value'));
@@ -205,7 +205,7 @@ function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $elemen
       $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], $field['widget']['extra_parent']);
     } 
     else {
-      $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], $field['tid']);          
+      $new_tids = content_taxonomy_autocomplete_insert_tags($extracted_ids['non_existing_terms'], content_taxonomy_field_get_parent($field));          
     }
   }
   return content_transpose_array_rows_cols(array($element['#columns'][0] => array_merge($existing_tids, $new_tids)));
@@ -238,12 +238,7 @@ function content_taxonomy_autocomplete_load($field_name, $string = '') {
   // this, "somecmpany, llc", "and ""this"" w,o.rks", foo bar
   $content_type_info = _content_type_info();
   $vid = $content_type_info['fields'][$field_name]['vid'];
-  if ($content_type_info['fields'][$field_name]['tid']) {
-    $tid = $content_type_info['fields'][$field_name]['tid'];
-  }
-  elseif ($content_type_info['fields'][$field_name]['parent']) {
-    $tid = $content_type_info['fields'][$field_name]['parent'];
-  }
+  $tid = content_taxonomy_field_get_parent($content_type_info['fields'][$field_name]);
   
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   $array = drupal_explode_tags($string);
