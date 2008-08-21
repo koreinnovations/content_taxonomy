@@ -97,7 +97,7 @@ function content_taxonomy_update_6000() {
             }
             unset($field_settings['save']);
             $field_settings['hide_taxonomy_fields'] = isset($field_settings['hide_taxonomy_fields']) ? $field_settings['hide_taxonomy_fields'] : TRUE;
-            
+            $field_settings['parent'] = $field_settings['tid']; 
             
             $field['global_settings'] = array();
             $setting_names = module_invoke($field['module'], 'field_settings', 'save', $field);
@@ -139,8 +139,10 @@ function content_taxonomy_update_6001() {
   $result = db_query("SELECT * FROM {". content_field_tablename() ."} WHERE type = 'content_taxonomy'");
   while ($field = db_fetch_array($result)) {
     $field['global_settings'] = unserialize($field['global_settings']);
-    $field['global_settings']['parent'] = $field['global_settings']['tid'];
-    unset($field['global_settings']['tid']);
+    if (!is_null($field['global_settings']['tid'])) {
+      $field['global_settings']['parent'] = $field['global_settings']['tid'];
+      unset($field['global_settings']['tid']);
+    }
     // 'columns' is a reserved word in MySQL4, so our column is named 'db_columns'.
     $field['db_columns'] = $field['columns'];
     drupal_write_record(content_field_tablename(), $field, 'field_name');
@@ -155,6 +157,24 @@ function content_taxonomy_update_6001() {
   return array();
 }
 
+/**
+ * Implemenation of hook_update_N().
+ * 
+ * Fixing parent setting
+ */
+function content_taxonomy_update_6002() {
+  $result = db_query("SELECT * FROM {". content_field_tablename() ."} WHERE type = 'content_taxonomy'");
+  while ($field = db_fetch_array($result)) {
+    $field['global_settings'] = unserialize($field['global_settings']);
+    if (!$field['global_settings']['parent']) {
+      $field['global_settings']['parent'] = 0;
+    }
+    // 'columns' is a reserved word in MySQL4, so our column is named 'db_columns'.
+    $field['db_columns'] = $field['columns'];
+    drupal_write_record(content_field_tablename(), $field, 'field_name');
+  }
+  return array();
+}
 /**
  * Helper function to get values from term_node table
  * needed in update from 5.x to 6.x
