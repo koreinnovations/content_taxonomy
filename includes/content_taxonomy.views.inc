@@ -6,7 +6,7 @@
  * provides values for the filters
  * unsets the empty value for non required fields, which is added content_taxonomy_allowed_values
  */
-class views_handler_filter_many_to_one_content_taxonomy extends views_handler_filter_many_to_one_content {
+class content_taxonomy_handler_filter_many_to_one extends content_handler_filter_many_to_one {
   var $content_field;
 
   function construct() {
