@@ -235,7 +235,8 @@ function content_taxonomy_allowed_values($field) {
       else {
         $value = $term->name;
       }
-      $options[$term->tid] = check_plain($value);
+      //do a check_plain except for selects because form api does that
+      $options[$term->tid] = ($field['widget']['type'] == 'content_taxonomy_select') ? $value : check_plain($value);
     }
   }
   if ((!$field['required'] && !$field['multiple']) || ($field['widget']['type'] == 'content_taxonomy_select' && !$field['multiple'])) {
