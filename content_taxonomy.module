@@ -350,6 +350,17 @@ function content_taxonomy_taxonomy($op, $type, $array = NULL) {
 }
 
 /**
+ * Implementation of hook_views_api().
+ */
+function content_taxonomy_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'content_taxonomy') . '/includes/views',
+  );
+}
+
+
+/**
  * Helper function that returns all content taxonomy fields, nested in their content types
  */
 function content_taxonomy_fields() {
