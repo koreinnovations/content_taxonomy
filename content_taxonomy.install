@@ -1,14 +1,12 @@
 <?php
 // $Id: $
 
-// Updates happen in random order, whether or not the module is enabled,
-// so include critical code here just to be sure.
-include_once(drupal_get_path('module', 'content') .'/content.module');
 
 /**
  * Implementation of hook_install().
  */
 function content_taxonomy_install() {
+  drupal_load('module', 'content');
   content_notify('install', 'content_taxonomy');
 }
 
@@ -16,6 +14,7 @@ function content_taxonomy_install() {
  * Implementation of hook_uninstall().
  */
 function content_taxonomy_uninstall() {
+  drupal_load('module', 'content');
   content_notify('uninstall', 'content_taxonomy');
 }
 
@@ -25,6 +24,7 @@ function content_taxonomy_uninstall() {
  * Notify content module when this module is enabled.
  */
 function content_taxonomy_enable() {
+  drupal_load('module', 'content');
   content_notify('enable', 'content_taxonomy');
 }
 
@@ -34,6 +34,7 @@ function content_taxonomy_enable() {
  * Notify content module when this module is disabled.
  */
 function content_taxonomy_disable() {
+  drupal_load('module', 'content');
   content_notify('disable', 'content_taxonomy');
 }
 
@@ -44,6 +45,12 @@ function content_taxonomy_disable() {
  * updates existing fields from 5.x to 6.x
  */
 function content_taxonomy_update_6000() {
+  if ($abort = content_check_update('content_taxonomy')) {
+    return $abort;
+  }
+  
+  drupal_load('module', 'content');
+  
   $ret = array();
 
   // Get the latest cache values and schema.
@@ -136,6 +143,7 @@ function content_taxonomy_update_6000() {
  * Renaming of the Parent setting
  */
 function content_taxonomy_update_6001() {
+  drupal_load('module', 'content');
   $result = db_query("SELECT * FROM {". content_field_tablename() ."} WHERE type = 'content_taxonomy'");
   while ($field = db_fetch_array($result)) {
     $field['global_settings'] = unserialize($field['global_settings']);
@@ -163,6 +171,7 @@ function content_taxonomy_update_6001() {
  * Fixing parent setting
  */
 function content_taxonomy_update_6002() {
+  drupal_load('module', 'content');
   $result = db_query("SELECT * FROM {". content_field_tablename() ."} WHERE type = 'content_taxonomy'");
   while ($field = db_fetch_array($result)) {
     $field['global_settings'] = unserialize($field['global_settings']);
