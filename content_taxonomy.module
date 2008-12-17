@@ -199,16 +199,21 @@ function content_taxonomy_field_formatter_info() {
  * Theme function for 'default' text field formatter.
  */
 function theme_content_taxonomy_formatter_default($element) {
-  $term = taxonomy_get_term($element['#item']['value']);
-  return check_plain($term->name);
+  if (!empty($element['#item']['value'])) {
+    $term = taxonomy_get_term($element['#item']['value']);
+    return check_plain($term->name);
+  }
 }
+
 
 /**
  * Theme function for 'link' text field formatter.
  */
 function theme_content_taxonomy_formatter_link($element) {
-  $term = taxonomy_get_term($element['#item']['value']);
-  return l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description));
+  if (!empty($element['#item']['value'])) {
+    $term = taxonomy_get_term($element['#item']['value']);
+    return l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description));
+  }
 }
 
 /**
