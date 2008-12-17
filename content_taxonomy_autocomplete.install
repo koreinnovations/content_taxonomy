@@ -1,14 +1,11 @@
 <?php
 // $Id$
 
-// Updates happen in random order, whether or not the module is enabled,
-// so include critical code here just to be sure.
-include_once(drupal_get_path('module', 'content') .'/content.module');
-
 /**
  * Implementation of hook_install().
  */
 function content_taxonomy_autocomplete_install() {
+  drupal_load('module', 'content');
   content_notify('install', 'content_taxonomy_autocomplete');
 }
 
@@ -16,6 +13,7 @@ function content_taxonomy_autocomplete_install() {
  * Implementation of hook_uninstall().
  */
 function content_taxonomy_autocomplete_uninstall() {
+  drupal_load('module', 'content');
   content_notify('uninstall', 'content_taxonomy_autocomplete');
 }
 
@@ -25,6 +23,7 @@ function content_taxonomy_autocomplete_uninstall() {
  * Notify content module when this module is enabled.
  */
 function content_taxonomy_autocomplete_enable() {
+  drupal_load('module', 'content');
   content_notify('enable', 'content_taxonomy_autocomplete');
 }
 
@@ -34,5 +33,6 @@ function content_taxonomy_autocomplete_enable() {
  * Notify content module when this module is disabled.
  */
 function content_taxonomy_autocomplete_disable() {
+  drupal_load('module', 'content');
   content_notify('disable', 'content_taxonomy_autocomplete');
 }
