@@ -218,8 +218,10 @@ function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $elemen
  */
 function content_taxonomy_autocomplete_data2form($element, $values, $field) {
   $terms = array();
-  foreach ($values as $delta => $entry) {
-    $terms[] = taxonomy_get_term($entry['value']);
+  if (count($values)) {
+    foreach ($values as $delta => $entry) {
+      $terms[] = taxonomy_get_term($entry['value']);
+    }
   }
   return content_taxonomy_autocomplete_merge_tags($terms, $field['vid']);
 }
