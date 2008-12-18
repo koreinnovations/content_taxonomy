@@ -147,9 +147,9 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
   $field = $form['#field_info'][$field_name];
   $field_key  = $element['#columns'][0];
   
-  if (!$form_state['submitted'] || $form_state['clicked_button']['#value'] == t('Preview')) {
-    $element['#value'] = content_taxonomy_autocomplete_data2form($element, $element['#value'], $field);
-  }
+  //fill the element's #value with the term names (if term ids exists)
+  $element['#value'] = content_taxonomy_autocomplete_data2form($element, $element['#value'], $field);
+
   $element[$field_key] = array(
     '#type' => 'textfield',
     '#default_value' => isset($element['#value']) ? $element['#value'] : '',
