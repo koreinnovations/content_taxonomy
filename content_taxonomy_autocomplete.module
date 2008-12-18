@@ -264,8 +264,7 @@ function content_taxonomy_autocomplete_load($field_name, $string = '') {
         AND (LOWER(t.name) LIKE LOWER('%%%s%%') OR LOWER(s.name) LIKE LOWER('%%%s%%'))", 't', 'tid'),
         $vid, $last_string, $last_string, 0, 10);
     }
-
-    $prefix = count($array) ? implode(', ', $array) .', ' : '';
+    $prefix = count($array) ? '"'. implode('", "', $array) .'", ' : '';
 
     while ($tag = db_fetch_object($result)) {
       $n = $tag->name;
