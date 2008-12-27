@@ -7,6 +7,16 @@
  * Defines a widget type for content_taxonomy for options
  **/
 
+/**
+ * Implementation of hook_theme().
+ */
+function content_taxonomy_options_theme() {
+  return array(
+    'content_taxonomy_options_widgets_none' => array(
+      'arguments' => array('field' => NULL),
+    ),
+  );
+}
 
 /**
  * Implementation of hook_widget_info().
@@ -76,4 +86,16 @@ function content_taxonomy_options_widget(&$form, &$form_state, $field, $items, $
   return $element;
 }
 
-?>
+/**
+ *  Theme the label for the empty value for options (for optional radios and single selects).
+ */
+function theme_content_taxonomy_options_widgets_none($field) {
+  switch ($field['widget']['type']) {
+    case 'content_taxonomy_options':
+      return t('N/A');
+    case 'content_taxonomy_select':
+      return t('- None -');
+    default :
+      return '';
+  }
+}
