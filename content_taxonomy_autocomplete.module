@@ -146,7 +146,7 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
   $field_name = $element['#field_name'];
   $field = $form['#field_info'][$field_name];
   $field_key  = $element['#columns'][0];
-  
+
   //fill the element's #value with the term names (if term ids exists)
   $element['#value'] = content_taxonomy_autocomplete_data2form($element, $element['#value'], $field);
 
@@ -174,7 +174,14 @@ function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $field_name = $element['#field_name'];
   $field = content_fields($field_name);
   $field_key  = $element['#columns'][0];
-  $value = $form_state['values'][$element['#field_name']][$field_key];
+  
+  // Depending on the element's #access the value is handled differently.
+  if (!isset($element['#access']) || $element['#access']) {
+    $value = $form_state['values'][$element['#field_name']][$field_key];
+  }
+  else {
+    $value = is_string($form_state['values'][$element['#field_name']]) ? $form_state['values'][$element['#field_name']] : '';
+  }
  
   $extracted_ids = content_taxonomy_autocomplete_tags_get_tids($value, $field['vid'], content_taxonomy_field_get_parent($field), $field['widget']['extra_parent']);
   
