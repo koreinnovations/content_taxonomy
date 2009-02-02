@@ -116,7 +116,6 @@ function content_taxonomy_autocomplete_elements() {
       '#input' => TRUE,
       '#columns' => array('value'), 
       '#delta' => 0,
-      '#element_validate' => array('content_taxonomy_autocomplete_validate'),
       '#process' => array('content_taxonomy_autocomplete_process'),
       '#autocomplete_path' => FALSE,
       ),
@@ -130,8 +129,29 @@ function content_taxonomy_autocomplete_widget(&$form, &$form_state, $field, $ite
   $element = array(
     '#type' => 'content_taxonomy_autocomplete',
     '#default_value' => isset($items) ? $items : NULL,
+    '#value_callback' => 'content_taxonomy_autocomplete_value',
+    '#vid' => $field['vid'],
   );
   return $element;
+}
+
+/**
+ * Value for a content taxonomy autocomplete field
+ *
+ * returns the taxonomy term name for term ids
+ */
+function content_taxonomy_autocomplete_value($element, $edit = FALSE) {
+  //dsm("content_taxonomy_autocomplete_value");
+  $field_key = $element['#columns'][0];
+  $terms = array();
+  if (count($element['#default_value'])) {
+    foreach ($element['#default_value'] as $delta => $entry) {
+      $terms[] = taxonomy_get_term($entry[$field_key]);
+    }
+  }
+  $value = content_taxonomy_autocomplete_merge_tags($terms, $element['#vid']);
+  $value = !empty($value) ? $value : NULL;
+  return array($field_key => $value);
 }
 
 
@@ -146,22 +166,26 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
   $field_name = $element['#field_name'];
   $field = $form['#field_info'][$field_name];
   $field_key  = $element['#columns'][0];
-
-  //fill the element's #value with the term names (if term ids exists)
-  $element['#value'] = content_taxonomy_autocomplete_data2form($element, $element['#value'], $field);
-
+  
   $element[$field_key] = array(
     '#type' => 'textfield',
-    '#default_value' => isset($element['#value']) ? $element['#value'] : '',
+    '#default_value' => isset($element['#value'][$field_key]) ? $element['#value'][$field_key] : '',
     '#autocomplete_path' => 'content_taxonomy/autocomplete/'. $element['#field_name'],
-    '#field_name' => $element['#field_name'],
-    '#delta' => $element['#delta'],
-    '#columns' => $element['#columns'],
     '#title' => $element['#title'],
     '#required' => $element['#required'],
     '#description' => $element['#description'],
+    '#field_name' => $element['#field_name'],
+    '#type_name' => $element['#type_name'],
+    '#delta' => $element['#delta'],
+    '#columns' => $element['#columns'],
     '#maxlength' => !empty($field['widget']['maxlength']) ? $field['widget']['maxlength'] : 255,
   );
+  
+  if (empty($element[$field_key]['#element_validate'])) {
+    $element[$field_key]['#element_validate'] = array();
+  }
+  array_unshift($element[$field_key]['#element_validate'], 'content_taxonomy_autocomplete_validate');
+  
   return $element;
 }
 
@@ -175,13 +199,14 @@ function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $field = content_fields($field_name);
   $field_key  = $element['#columns'][0];
   
-  // Depending on the element's #access the value is handled differently.
-  if (!isset($element['#access']) || $element['#access']) {
-    $value = $form_state['values'][$element['#field_name']][$field_key];
+  //if the element parents array contains the field key, we have to remove it
+  //because otherwise form_set_value won't work. (still the question why is it in)
+  if ($element['#parents'][count($element['#parents'])-1] == $field_key) {
+    array_pop($element['#parents']);
+    array_pop($element['#array_parents']);
   }
-  else {
-    $value = is_string($form_state['values'][$element['#field_name']]) ? $form_state['values'][$element['#field_name']] : '';
-  }
+  
+  $value = $element['#value'];
  
   $extracted_ids = content_taxonomy_autocomplete_tags_get_tids($value, $field['vid'], content_taxonomy_field_get_parent($field), $field['widget']['extra_parent']);
   
@@ -219,19 +244,6 @@ function content_taxonomy_autocomplete_form2data($extracted_ids, $field, $elemen
 
 }
 
-/**
- * Helper function to transpose the values as stored in the database
- * to the format the content_taxonomy_autocomplete
- */
-function content_taxonomy_autocomplete_data2form($element, $values, $field) {
-  $terms = array();
-  if (count($values)) {
-    foreach ($values as $delta => $entry) {
-      $terms[] = taxonomy_get_term($entry['value']);
-    }
-  }
-  return content_taxonomy_autocomplete_merge_tags($terms, $field['vid']);
-}
 
 /**
  * Retrieve a pipe delimited string of autocomplete suggestions
