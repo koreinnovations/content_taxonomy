@@ -118,23 +118,11 @@ function content_taxonomy_field_settings($op, $field) {
         '#description' => t('By setting a numeric value, the depth of the hierarchy shown can be limited. Leave this field blank to show the whole hierarchy.'),
       );
       
-      $form['advanced'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Advanced settings'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-      );
-      $form['advanced']['hide_taxonomy_fields'] = array(
-        '#type' => 'checkbox', 
-        '#title' => t('Hide default taxonomy fields on the node form'),
-        '#default_value' => is_numeric($field['hide_taxonomy_fields']) ? $field['hide_taxonomy_fields'] : 1,
-        '#description' => t('If this option is set for at least one Content Taxonomy Field per Content Type, default fields from the core Taxonomy module get hidden.'),
-      );
       
       return $form;   
     
     case 'save':
-      return array('save_term_node', 'vid', 'parent', 'parent_php_code', 'depth', 'hide_taxonomy_fields');
+      return array('save_term_node', 'vid', 'parent', 'parent_php_code', 'depth');
     
     case 'database columns':
       return array(
@@ -166,17 +154,34 @@ function content_taxonomy_field($op, &$node, $field, &$items, $teaser, $page) {
   switch ($op) {      
     case 'presave':
       if ($field['save_term_node']) {
-        global $_content_taxonomy_array_cleared;
-        if (!is_array($_content_taxonomy_array_cleared) || !$_content_taxonomy_array_cleared[$node->nid]) {
-          taxonomy_node_delete_revision($node);
-          unset($node->taxonomy);
-          $_content_taxonomy_array_cleared[$node->nid] = true;
+        static $_content_taxonomy_array_cleared;
+        if (!is_array($_content_taxonomy_array_cleared) || !$_content_taxonomy_array_cleared[$node->nid][$field['vid']]) {
+          _content_taxonomy_taxonomy_unset($node->taxonomy, array($field['vid']));
+          $_content_taxonomy_array_cleared[$node->nid][$field['vid']] = TRUE;
         }
       
         foreach ($items as $key => $entry) {
           if ($entry['value']) {
-            $node->taxonomy[$entry['value']] = $entry['value'];
+            if (is_object($node->taxonomy[$entry['value']])) {
+              continue;
+            }
+            elseif (is_array($node->taxonomy[$field['vid']])) {
+              $node->taxonomy[$field['vid']][] = $entry['value'];
+            }
+            // when saving an existing node without presenting a form to the user,
+            // the terms are objects keyed by tid. there's no need to re-set these
+            // terms, and to do so causes php warnings because the database rejects
+            // the row insert because of primary key constraints.
+            else {
+              $node->taxonomy[$field['vid']] = array($entry['value']);
+            }
           }
+        }
+        // the $node->taxonomy array should never be empty, because in this case the 
+        // taxonomy nodeapi doesn't call taxonomy_node_save which handles removing
+        // and inserting of terms
+        if (empty($node->taxonomy)) {
+          $node->taxonomy[$field['vid']] = NULL;
         }
       }
       break;
@@ -314,14 +319,18 @@ function content_taxonomy_field_get_parent($field) {
  */
 function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
   if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {
+    if (!is_array($form['taxonomy'])) {
+      return;
+    }
+    $_content_taxonomy_vids = array();
     $info = _content_type_info();
     $content_type = $info['content types'][$form['type']['#value']];
-    foreach ($content_type['fields'] as $field_name => $field) {
-      if ($field['type'] == 'content_taxonomy' && $field['hide_taxonomy_fields']) {
-        unset($form['taxonomy']);
-        break;
+    foreach ($content_type['fields'] as $field) {
+      if ($field['type'] == 'content_taxonomy' && (!in_array($field['vid'], $_content_taxonomy_vids))) {
+        $_content_taxonomy_vids[] = $field['vid'];
       }
     }
+    _content_taxonomy_taxonomy_unset($form['taxonomy'], $_content_taxonomy_vids);
   }
 }
 
@@ -409,4 +418,28 @@ function _content_taxonomy_get_all_terms() {
     } 
   }
   return $options;
+}
+
+/**
+ * carefully unsets node or node form taxonomy items
+ * 
+ *
+ * @param $form the node or node form's taxonomy selections. nodes are objects and forms are arrays, so only the actual taxonomy value or property is passed
+ * @param $vids an array containing a list of vocabulary IDs whose terms should be unset
+ */
+function _content_taxonomy_taxonomy_unset(&$form, $vids) {
+  if (empty($vids) || empty($form)) {
+    return;
+  }
+  foreach ($form as $key => &$value) {
+    if ($key == 'tags') {
+      _content_taxonomy_taxonomy_unset($value, $vids);
+    }
+    elseif (is_object($value) && in_array($value->vid, $vids)) {
+      unset($form[$key]);
+    }
+    elseif (in_array($key, $vids)) {
+      unset($form[$key]);
+    }
+  }
 }
