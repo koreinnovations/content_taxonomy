@@ -367,10 +367,10 @@ class ContentTaxonomyAutocompleteTest extends ContentTaxonomyTestCase {
   }
   
   function setUp() {
-    parent::setUp();
+    parent::setUp("diff");
   }
   
-  function testAutocompleteSingle() {
+  function testAutocomplete() {
     $type = $this->content_types[1];
     $type_url = str_replace('_', '-', $type->type);
     $terms = $this->createTerms(4);
@@ -433,15 +433,13 @@ class ContentTaxonomyAutocompleteTest extends ContentTaxonomyTestCase {
     $edit['body'] = $this->randomName(20);
     $edit[$field_name .'[value]'] = $new_term_name;
     $this->drupalPost('node/add/'. $type_url, $edit, 'Save');
-    $new_term_tid = db_result(db_query("SELECT tid FROM {term_data} WHERE name = '%s' AND vid = 1", $new_term_name));
+    $new_term_tid = db_result(db_query("SELECT tid FROM {term_data} WHERE name = '%s' AND vid = %d", $new_term_name, $settings['vid']));
     $this->assertTrue(($new_term_tid > 0), "New term added to vocabulary");
     $node = node_load(array('title' => $edit['title']));
     $this->assertEqual($node->{$field_name}[0]['value'], $new_term_tid, 'Terms saved');
     $this->drupalGet('node/'. $node->nid);    
     $this->assertText($new_term_name, 'Terms displayed');
-    
-    
-    
+
     //test Multi Field
     $type = $this->content_types[0];
     $type_url = str_replace('_', '-', $type->type);
@@ -450,7 +448,7 @@ class ContentTaxonomyAutocompleteTest extends ContentTaxonomyTestCase {
     $settings = array(
       'type' => 'content_taxonomy', 
       'widget_type' => 'content_taxonomy_autocomplete',
-      'vid' => 1,
+      'vid' => $terms[0]->vid,
       'parent' => 0,
       'parent_php_code' => '',
       'show_depth' => 0,
@@ -515,13 +513,34 @@ class ContentTaxonomyAutocompleteTest extends ContentTaxonomyTestCase {
     $edit['body'] = $this->randomName(20);
     $edit[$field_name .'[value]'] = $new_term_name;
     $this->drupalPost('node/add/'. $type_url, $edit, 'Preview');
-    $new_term_tid = db_result(db_query("SELECT tid FROM {term_data} WHERE name = '%s' AND vid = 1", $new_term_name));
+    $new_term_tid = db_result(db_query("SELECT tid FROM {term_data} WHERE name = '%s' AND vid = %d", $new_term_name, $settings['vid']));
     $this->assertTrue(($new_term_tid > 0), "Term in added to vocabulary");
     $this->drupalPost('node/add/'. $type_url, $edit, 'Save');
     $node = node_load(array('title' => $edit['title']));
     $this->assertNodeMultiValues($node, $field_name, array(taxonomy_get_term($new_term_tid)));
     $this->drupalGet('node/'. $node->nid);    
     $this->assertText($new_term_name, 'Terms displayed');
+    
+    // Create a node with one value and test preview diff
+    $edit = array();
+    $edit['title'] = $this->randomName(20);
+    $edit['body'] = $this->randomName(20);
+    $edit[$field_name .'[value]'] = $terms[0]->name;
+    $this->drupalPost('node/add/'. $type_url, $edit, 'Save');
+    $node = node_load(array('title' => $edit['title']));
+    
+    $edit = array();
+    $edit['title'] = $node->title;
+    $edit['body'] = str_replace('<!--break-->', '', $node->body);
+    $edit[$field_name .'[value]'] = $terms[0]->name;    
+    $this->drupalPost('node/'. $node->nid .'/edit', $edit, 'Preview changes');
+    $this->assertText('No visible changes', 'No visible changes');
+    $this->assertRaw($terms[0]->name, 'Term in field');
+   /* $this->drupalPost('node/'. $node->nid .'/edit', $edit, 'Save');
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertNodeMultiValues($node, $field_name, array($terms[0]));
+    $this->drupalGet('node/'. $node->nid);
+    $this->assertText($terms[0]->name, 'Terms displayed');*/
     
     //CREATE NEW REQUIRED FIELD
     $settings['required'] = TRUE;
@@ -536,10 +555,88 @@ class ContentTaxonomyAutocompleteTest extends ContentTaxonomyTestCase {
     $this->assertText($field_name .' field is required', 'Validated required field');
     $edit[$field_name.'[value]'] = $terms[1]->name;
     $this->drupalPost('node/add/'. $type_url, $edit, 'Save');
-    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertNoText($field_name .' field is required', 'Validation for required field successfully passed');
+    $node = node_load(array('title' => $edit['title']));
     $this->assertNodeMultiValues($node, $field_name, array($terms[1]));
     $this->drupalGet('node/'. $node->nid);
     $this->assertText($terms[1]->name, 'Terms displayed');
 
+  }
+}
+
+/**
+ * Test Cases for Content Taxonomy Autocomplete
+ */
+class ContentTaxonomyAutocompletePermissionsTest extends ContentTaxonomyTestCase {
+  
+  function getInfo() {
+    return array(
+      'name' => t('Content Taxonomy - Autocomplete with Permissions'),
+      'description' => t('Tests freetagging widget with content permissions'),
+      'group' => t('Content Taxonomy'),
+    );
+  }
+  
+  function setUp() {
+    parent::setUp("content_permissions");
+  }
+  
+  function testAutocomplete() {
+    $type = $this->content_types[1];
+    $type_url = str_replace('_', '-', $type->type);
+    $terms = $this->createTerms(4);
+    
+    //single field
+    $settings = array(
+      'type' => 'content_taxonomy', 
+      'widget_type' => 'content_taxonomy_autocomplete',
+      'vid' => $terms[0]->vid,
+      'parent' => 0,
+      'parent_php_code' => '',
+      'show_depth' => 0,
+      'save_term_node' => FALSE,
+      'depth' => NULL,
+      'hide_taxonomy_fields' => TRUE,
+    );
+    
+    $field = $this->createField($settings, 1);
+    $field_name = $field['field_name'];
+    
+    $permissions = array('edit '. $field_name, 'view '. $field_name);
+    $rids = db_query("SELECT rid FROM {role}");
+    while($obj = db_fetch_object($rids)) {
+      db_query("INSERT INTO {permission} (rid, perm) VALUES (%d, '%s')", $obj->rid, implode(', ', $permissions));
+    }
+    
+    // Create a node with one value with edit permissions
+    $edit = array();
+    $edit['title'] = $this->randomName(20);
+    $edit['body'] = $this->randomName(20);
+    $edit[$field_name .'[value]'] = $terms[0]->name;
+    $this->drupalPost('node/add/'. $type_url, $edit, 'Save');
+    $node = node_load(array('title' => $edit['title']));
+    $this->assertEqual($node->{$field_name}[0]['value'], $terms[0]->tid, 'Terms saved');
+    $this->drupalGet('node/'. $node->nid);    
+    $this->assertText($terms[0]->name, 'Terms displayed');
+    $this->assertNoText($terms[1]->name, 'Term not displayed');
+    
+    //delete edit field perm
+    $permissions_old = array('edit '. $field_name, 'view '. $field_name);
+    $permissions_new = array('view '. $field_name);
+    $rids = db_query("SELECT rid FROM {role}");
+    while($obj = db_fetch_object($rids)) {
+      db_query("DELETE FROM {permission WHERE rid = %d AND perm = '%s'", $obj->rid, implode(', ', $permissions_old));
+      db_query("INSERT INTO {permission} (rid, perm) VALUES (%d, '%s')", $obj->rid, implode(', ', $permissions_new));
+    }
+    
+    //Edit the node, but without perm
+    $edit = array();
+    $this->drupalPost('node/'. $node->nid .'/edit', $edit, 'Save');
+    $this->drupalGet('node/'. $node->nid .'/edit');
+    $this->assertNoRaw($field_name, "Field hidden");
+    $node = node_load($node->nid, NULL, TRUE);
+    $this->assertIdentical($node->{$field_name}[0]['value'], $terms[0]->tid, 'Terms saved');
+    $this->drupalGet('node/'. $node->nid);
+    $this->assertText($terms[0]->name, 'Terms displayed');
   }
 }
