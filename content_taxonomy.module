@@ -431,9 +431,9 @@ function _content_taxonomy_taxonomy_unset(&$form, $vids) {
   if (empty($vids) || empty($form)) {
     return;
   }
-  foreach ($form as $key => &$value) {
+  foreach ($form as $key => $value) {
     if ($key == 'tags') {
-      _content_taxonomy_taxonomy_unset($value, $vids);
+      _content_taxonomy_taxonomy_unset($form[$key], $vids);
     }
     elseif (is_object($value) && in_array($value->vid, $vids)) {
       unset($form[$key]);
