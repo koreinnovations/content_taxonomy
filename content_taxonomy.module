@@ -331,6 +331,17 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
       }
     }
     _content_taxonomy_taxonomy_unset($form['taxonomy'], $_content_taxonomy_vids);
+    
+    //hide empty 'Vocabularies' fieldsets
+    $empty_fieldset = TRUE;
+    foreach ($form['taxonomy'] as $key => &$value) {
+      if (is_array($value) && !empty($value)) {
+        $empty_fieldset = FALSE;
+      }
+    }
+    if($empty_fieldset) {
+      unset($form['taxonomy']);
+    }
   }
 }
 
