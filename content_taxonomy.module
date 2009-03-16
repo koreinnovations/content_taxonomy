@@ -357,7 +357,12 @@ function content_taxonomy_taxonomy($op, $type, $array = NULL) {
             $tid = $array['tid'];
             if ($tid) {
               $db_info = content_database_info($field);
-              db_query('DELETE FROM {'. $db_info['table'] .'} WHERE '. $db_info['columns']['value']['column'] .' = %d', $tid);
+              if ($field['multiple']) {
+                db_query('DELETE FROM {'. $db_info['table'] .'} WHERE '. $db_info['columns']['value']['column'] .' = %d', $tid);
+              }
+              else {
+                db_query('UPDATE {'. $db_info['table'] .'} SET '. $db_info['columns']['value']['column'] .'= NULL  WHERE '. $db_info['columns']['value']['column'] .' = %d', $tid);
+              }
               $needs_refresh = TRUE;
               watchdog('content', 'Entries with term id = %tid have been deleted out of %table for field %field_name.', array('%tid' => $tid, '%table' => $db_info['table'], '%field_name' => $field_name));
             }
