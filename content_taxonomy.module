@@ -166,7 +166,9 @@ function content_taxonomy_field($op, &$node, $field, &$items, $teaser, $page) {
               continue;
             }
             elseif (is_array($node->taxonomy[$field['vid']])) {
-              $node->taxonomy[$field['vid']][] = $entry['value'];
+              if (!in_array($entry['value'], $node->taxonomy[$field['vid']])) {
+                $node->taxonomy[$field['vid']][] = $entry['value'];
+              }
             }
             // when saving an existing node without presenting a form to the user,
             // the terms are objects keyed by tid. there's no need to re-set these
