@@ -196,7 +196,7 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
  */
 function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $field_name = $element['#field_name'];
-  $field = content_fields($field_name);
+  $field = content_fields($field_name, $element['#type_name']);
   $field_key  = $element['#columns'][0];
   
   //if the element parents array contains the field key, we have to remove it
