@@ -151,7 +151,7 @@ function content_taxonomy_field_settings($op, $field) {
  * Implementation of hook_field().
  */
 function content_taxonomy_field($op, &$node, $field, &$items, $teaser, $page) {
-  switch ($op) {      
+  switch ($op) {         
     case 'presave':
       if ($field['save_term_node']) {
         static $_content_taxonomy_array_cleared;
@@ -338,11 +338,15 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
     $empty_fieldset = TRUE;
     foreach ($form['taxonomy'] as $key => &$value) {
       if (is_array($value) && !empty($value)) {
-        $empty_fieldset = FALSE;
+        $empty_fieldset = FALSE; 
+        break;
       }
     }
     if($empty_fieldset) {
-      unset($form['taxonomy']);
+      // creating an empty taxonomy array is causing errors on preview in the taxonomy module
+      // so we create an empty value field as placeholder, which is going to prevent the errors
+      $form['taxonomy'] = array('#tree' => TRUE);
+      $form['taxonomy']['key'] = array('#type' => 'value', '#value' => 0);
     }
   }
 }
