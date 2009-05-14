@@ -208,10 +208,13 @@ function content_taxonomy_autocomplete_validate($element, &$form_state) {
   $value = $element['#value'];
  
   $extracted_ids = content_taxonomy_autocomplete_tags_get_tids($value, $field['vid'], content_taxonomy_field_get_parent($field), $field['widget']['extra_parent']);
-  
+
   if (!$field['multiple'] && count(content_taxonomy_autocomplete_split_tags($value, $field['vid'])) > 1) {
     form_set_error($field['field_name'] .'][value', t('You can provide only one value'));
     return;
+  }
+  else if (($field['multiple'] >= 2) && (count(content_taxonomy_autocomplete_split_tags($value, $field['vid'])) > $field['multiple'])) {
+    form_set_error($field['field_name'] .'][value', t('%name: this field cannot hold more than @count values.', array('%name' => t($field['widget']['label']), '@count' => $field['multiple'])));
   }
   if ($field['widget']['new_terms'] == 'deny') {
     if (is_array($extracted_ids['non_existing_terms'])) {
