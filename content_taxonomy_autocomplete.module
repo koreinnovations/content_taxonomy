@@ -84,10 +84,18 @@ function content_taxonomy_autocomplete_widget_settings($op, $widget) {
         '#required' => TRUE,
         '#description' => t('Defines how many characters can be typed into the autocomplete field. For values higher than 255, remember that one term name can not be longer than 255 (would be cutted), nevertheless it\'s not a problem for multiple values, separated by commas.'),
       );
+      if (module_exists('active_tags')) {
+        $form['autocomplete']['active_tags'] = array(
+          '#type' => 'checkbox', 
+          '#title' => t('Use Active Tags style widget'), 
+          '#default_value' => isset($widget['active_tags']) ? $widget['active_tags'] : 0,
+          '#description' => t('Use the Active Tags module to improve the usability of this autocomplete widget.'),
+        );
+      }
       return $form;
 
     case 'save':
-      return array('new_terms', 'extra_parent', 'maxlength');
+      return array('new_terms', 'extra_parent', 'maxlength', 'active_tags');
   }
 }
 
@@ -184,6 +192,10 @@ function content_taxonomy_autocomplete_process($element, $edit, $form_state, $fo
     $element[$field_key]['#element_validate'] = array();
   }
   array_unshift($element[$field_key]['#element_validate'], 'content_taxonomy_autocomplete_validate');
+  
+  if (module_exists('active_tags') && $field['widget']['active_tags']) {
+    active_tags_enable_widget('#' . $element['#id'] . '-value-wrapper');
+  }
   
   return $element;
 }
@@ -403,4 +415,3 @@ function content_taxonomy_autocomplete_merge_tags($terms, $vid) {
 function theme_content_taxonomy_autocomplete($element) {
   return $element['#children'];
 }
-
