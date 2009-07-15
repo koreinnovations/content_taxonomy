@@ -300,7 +300,6 @@ function content_taxonomy_allowed_values_groups($field) {
       unset($options[$term->tid]);
     }
   }
-
   return $options;
 }
 
@@ -342,7 +341,7 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
     
     //hide empty 'Vocabularies' fieldsets
     $empty_fieldset = TRUE;
-    foreach ($form['taxonomy'] as $key => &$value) {
+    foreach ($form['taxonomy'] as $key => $value) {
       if (is_array($value) && !empty($value)) {
         $empty_fieldset = FALSE; 
         break;
