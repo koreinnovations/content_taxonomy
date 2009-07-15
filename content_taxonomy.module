@@ -501,3 +501,17 @@ function _content_taxonomy_taxonomy_unset(&$form, $vids) {
     }
   }
 }
+
+/**
+ * Implementation of hook_content_multigroup_allowed_widgets().
+ */
+function content_taxonomy_content_multigroup_allowed_widgets() {
+  return array('content_taxonomy_autocomplete', 'content_taxonomy_options', 'content_taxonomy_select');
+}
+
+/**
+ * Implementation of hook_content_multigroup_no_remove_widgets().
+ */
+function content_taxonomy_content_multigroup_no_remove_widgets() {
+  return array('content_taxonomy_autocomplete', 'content_taxonomy_options', 'content_taxonomy_select');
+}
