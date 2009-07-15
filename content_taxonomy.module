@@ -230,7 +230,7 @@ function theme_content_taxonomy_formatter_link($element) {
   if (!empty($element['#item']['value'])) {
     $term = taxonomy_get_term($element['#item']['value']);
     _content_taxonomy_localize_term($term);
-    return l($term->name, taxonomy_term_path($term), array('rel' => 'tag', 'title' => $term->description));
+    return l($term->name, taxonomy_term_path($term), array('attributes' => array('rel' => 'tag', 'title' => $term->description)));
   }
 }
 
