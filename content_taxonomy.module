@@ -327,6 +327,11 @@ function content_taxonomy_field_get_parent($field) {
 function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
   if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {
     if (!is_array($form['taxonomy'])) {
+      // empty taxonomy arrays can cause errors on preview
+      if ($form_state['post']['op'] == t('Preview')) {
+        $form['taxonomy'] = array('#tree' => TRUE);
+        $form['taxonomy']['key'] = array('#type' => 'value', '#value' => '');
+      }
       return;
     }
     $_content_taxonomy_vids = array();
