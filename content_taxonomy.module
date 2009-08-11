@@ -292,7 +292,6 @@ function content_taxonomy_allowed_values_groups($field) {
     _content_taxonomy_localize_term($default_term);
     $options[$default_term->tid] = check_plain($default_term->name);
   }
-  
   foreach (taxonomy_get_children($group_parent) as $group) {
     foreach (taxonomy_get_children($group->tid) as $term) {
       _content_taxonomy_localize_term($term);
@@ -331,8 +330,8 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
       if ($form_state['post']['op'] == t('Preview')) {
         $form['taxonomy'] = array('#tree' => TRUE);
         $form['taxonomy']['key'] = array('#type' => 'value', '#value' => '');
+        return;
       }
-      return;
     }
     $_content_taxonomy_vids = array();
     $info = _content_type_info();
@@ -346,17 +345,19 @@ function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
     
     //hide empty 'Vocabularies' fieldsets
     $empty_fieldset = TRUE;
-    foreach ($form['taxonomy'] as $key => $value) {
-      if (is_array($value) && !empty($value)) {
-        $empty_fieldset = FALSE; 
-        break;
+    if (is_array($form['taxonomy'])) {
+      foreach ($form['taxonomy'] as $key => $value) {
+        if (is_array($value) && !empty($value)) {
+          $empty_fieldset = FALSE; 
+          break;
+        }
       }
     }
-    if($empty_fieldset) {
+    if ($empty_fieldset) {
       // creating an empty taxonomy array is causing errors on preview in the taxonomy module
       // so we create an empty value field as placeholder, which is going to prevent the errors
       $form['taxonomy'] = array('#tree' => TRUE);
-      $form['taxonomy']['key'] = array('#type' => 'value', '#value' => 0);
+      $form['taxonomy']['key'] = array('#type' => 'value', '#value' => '');
     }
   }
 }
