@@ -521,3 +521,17 @@ function content_taxonomy_content_multigroup_allowed_widgets() {
 function content_taxonomy_content_multigroup_no_remove_widgets() {
   return array('content_taxonomy_autocomplete', 'content_taxonomy_options', 'content_taxonomy_select');
 }
+
+/**
+ * Implementation of hook_content_diff_values
+ */
+function content_taxonomy_content_diff_values($node, $field, $items) {
+  $return = array();
+  foreach ($items as $item) {
+    if (isset($item['value']) && is_numeric($item['value'])) {
+      $term = taxonomy_get_term($item['value']);
+      $return[] = $term->name; 
+    }
+  }
+  return $return;
+}
