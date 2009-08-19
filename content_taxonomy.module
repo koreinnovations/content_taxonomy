@@ -163,7 +163,9 @@ function content_taxonomy_field($op, &$node, $field, &$items, $teaser, $page) {
         
         foreach ($items as $key => $entry) {
           if ($entry['value']) {
-            if (is_object($node->taxonomy[$entry['value']]) || (is_array($node->taxonomy) && in_array($entry['value'], $node->taxonomy))) {
+            if (is_object($node->taxonomy[$entry['value']]) 
+              || (is_array($node->taxonomy) && in_array($entry['value'], $node->taxonomy))
+              || (isset($entry['_remove']) && $entry['_remove'] == 1)) {
               continue;
             }
             elseif (is_array($node->taxonomy[$field['vid']])) {
