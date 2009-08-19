@@ -275,6 +275,12 @@ function content_taxonomy_autocomplete_load($field_name, $string = '') {
   $vid = $content_type_info['fields'][$field_name]['vid'];
   $tid = content_taxonomy_field_get_parent($content_type_info['fields'][$field_name]);
   
+  // If the menu system has splitted the search text because of slashes, glue it back.
+  if (func_num_args() > 2) {
+    $args = func_get_args();
+    $string .= '/'. implode('/', array_slice($args, 2));
+  }
+  
   // The user enters a comma-separated list of tags. We only autocomplete the last tag.
   $array = drupal_explode_tags($string);
 
