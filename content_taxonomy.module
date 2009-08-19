@@ -287,7 +287,7 @@ function content_taxonomy_allowed_values_groups($field) {
   $group_parent = $field['widget']['group_parent'];
   
   //if children in no group
-  $default_terms = taxonomy_get_children($parent);
+  $default_terms = taxonomy_get_children($parent, $field['vid']);
   foreach ($default_terms as $default_term) {
     _content_taxonomy_localize_term($default_term);
     $options[$default_term->tid] = check_plain($default_term->name);
@@ -298,6 +298,7 @@ function content_taxonomy_allowed_values_groups($field) {
       $options[$group->name][$term->tid] = check_plain($term->name);
       unset($options[$term->tid]);
     }
+    unset($options[$group->tid]);
   }
   return $options;
 }
