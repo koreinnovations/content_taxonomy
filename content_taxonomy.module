@@ -324,7 +324,7 @@ function content_taxonomy_field_get_parent($field) {
  * hides the taxonomy form if there exists a content taxonomy field, which is set to 'hide default taxonomy fields'
  */
 function content_taxonomy_form_alter(&$form, $form_state, $form_id) {
-  if (isset($form['type']) && $form['type']['#value'] .'_node_form' == $form_id) {
+  if (isset($form['type']['#value']) && $form['type']['#value'] .'_node_form' == $form_id && isset($form['taxonomy'])) {
     if (!is_array($form['taxonomy'])) {
       // empty taxonomy arrays can cause errors on preview
       if ($form_state['post']['op'] == t('Preview')) {
