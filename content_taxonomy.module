@@ -160,10 +160,10 @@ function content_taxonomy_field($op, &$node, $field, &$items, $teaser, $page) {
           _content_taxonomy_taxonomy_unset($node->taxonomy, array($field['vid']));
           $_content_taxonomy_array_cleared[$node->nid][$field['vid']] = TRUE;
         }
-      
+        
         foreach ($items as $key => $entry) {
           if ($entry['value']) {
-            if (is_object($node->taxonomy[$entry['value']])) {
+            if (is_object($node->taxonomy[$entry['value']]) || (is_array($node->taxonomy) && in_array($entry['value'], $node->taxonomy))) {
               continue;
             }
             elseif (is_array($node->taxonomy[$field['vid']])) {
@@ -493,7 +493,7 @@ function _content_taxonomy_localize_vocabulary(&$vocabulary) {
  * @param $vids an array containing a list of vocabulary IDs whose terms should be unset
  */
 function _content_taxonomy_taxonomy_unset(&$form, $vids) {
-  if (empty($vids) || empty($form)) {
+  if (empty($vids) || !is_array($form)) {
     return;
   }
   foreach ($form as $key => $value) {
