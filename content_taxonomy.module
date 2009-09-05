@@ -254,26 +254,27 @@ function content_taxonomy_allowed_values($field) {
   
   //for opt groups call different function
   if (isset($field['widget']['group_parent']) && $field['widget']['group_parent'] > 0) {
-    return content_taxonomy_allowed_values_groups($field);
+    $options = content_taxonomy_allowed_values_groups($field);
   }
+  else {
+    $depth = (is_numeric($field['depth'])) ? $field['depth'] : NULL;
+    $tree = taxonomy_get_tree($field['vid'], content_taxonomy_field_get_parent($field), -1, $depth);
   
-  $depth = (is_numeric($field['depth'])) ? $field['depth'] : NULL;
-
-  $tree = taxonomy_get_tree($field['vid'], content_taxonomy_field_get_parent($field), -1, $depth);
-  
-  if (is_array($tree)) {
-    foreach ($tree as $term) {
-      _content_taxonomy_localize_term($term);
-      if ($field['widget']['show_depth']) {
-        $value = str_repeat(' - ', $term->depth) . $term->name;
+    if (is_array($tree)) {
+      foreach ($tree as $term) {
+        _content_taxonomy_localize_term($term);
+        if ($field['widget']['show_depth']) {
+          $value = str_repeat(' - ', $term->depth) . $term->name;
+        }
+        else {
+          $value = $term->name;
+        }
+        //do a check_plain except for selects because form api does that
+        $options[$term->tid] = ($field['widget']['type'] == 'content_taxonomy_select') ? $value : check_plain($value);
       }
-      else {
-        $value = $term->name;
-      }
-      //do a check_plain except for selects because form api does that
-      $options[$term->tid] = ($field['widget']['type'] == 'content_taxonomy_select') ? $value : check_plain($value);
     }
   }
+  
   if (($field['widget']['type'] == 'content_taxonomy_select' && !$field['multiple']) || ($field['widget']['type'] == 'content_taxonomy_options' && !$field['multiple'] && !$field['required'])) {
     $options = array('' => theme('content_taxonomy_options_widgets_none', $field)) + $options;
   }
