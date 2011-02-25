@@ -1,4 +1,3 @@
-; $Id$
 name = Content Taxonomy
 description = Defines a field type for taxonomy terms
 dependencies[] = content 
