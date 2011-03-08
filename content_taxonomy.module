@@ -538,3 +538,12 @@ function content_taxonomy_content_diff_values($node, $field, $items) {
   }
   return $return;
 }
+
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function content_taxonomy_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'relationships') {
+    return 'includes/panels/' . $plugin;
+  }
+}
